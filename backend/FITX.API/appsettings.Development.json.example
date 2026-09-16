@@ -1,0 +1,19 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost,1433;Database=FITX;User Id=sa;Password=CHANGE_ME;TrustServerCertificate=True;Encrypt=False"
+  },
+  "Jwt": {
+    "Issuer": "FITX.API",
+    "Audience": "FITX.Web",
+    "Secret": "GENERATE_A_RANDOM_SECRET_WITH_AT_LEAST_32_BYTES"
+  },
+  "Database": { "ApplyMigrations": true },
+  "Seed": {
+    "DemoData": true,
+    "DevelopmentAdmin": true,
+    "DevelopmentAdminEmail": "admin@fitx.local",
+    "DevelopmentAdminPassword": "Fitx@123"
+  },
+  "ReminderProviders": { "Mode": "Mock" },
+  "Cors": { "AllowedOrigins": [ "http://localhost:3000" ] }
+}

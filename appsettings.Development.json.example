@@ -1,0 +1,58 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost,1433;Database=FITX;User Id=sa;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True"
+  },
+  "Jwt": {
+    "Secret": "replace-with-at-least-32-random-bytes",
+    "Issuer": "FITX.API",
+    "Audience": "FITX.Web",
+    "AccessTokenMinutes": 15,
+    "RefreshTokenDays": 7,
+    "RememberMeRefreshTokenDays": 30
+  },
+  "Cors": {
+    "AllowedOrigins": [
+      "http://localhost:3000"
+    ]
+  },
+  "Database": {
+    "ApplyMigrations": true
+  },
+  "Seed": {
+    "DemoData": true,
+    "DevelopmentAdmin": true,
+    "DevelopmentAdminEmail": "admin@fitx.local",
+    "DevelopmentAdminPassword": "Fitx@123"
+  },
+  "GymDefaults": {
+    "Currency": "PKR",
+    "Timezone": "Asia/Karachi"
+  },
+  "Membership": {
+    "ExpiringSoonDays": 7
+  },
+  "ReminderProviders": {
+    "Mode": "Mock",
+    "Email": {
+      "Provider": "Mock",
+      "ApiKey": "",
+      "FromAddress": ""
+    },
+    "Sms": {
+      "Provider": "Mock",
+      "ApiKey": "",
+      "SenderId": ""
+    },
+    "WhatsApp": {
+      "Provider": "Mock",
+      "ApiKey": "",
+      "SenderId": ""
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

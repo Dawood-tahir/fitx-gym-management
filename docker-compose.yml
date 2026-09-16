@@ -1,0 +1,104 @@
+name: ${COMPOSE_PROJECT_NAME:-fitx}
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${SQLSERVER_SA_PASSWORD:?Set SQLSERVER_SA_PASSWORD in .env}"
+    ports:
+      - "${SQLSERVER_PORT:-1433}:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
+          -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - fitx
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: runtime
+      args:
+        DOTNET_VERSION: "${DOTNET_VERSION:-9.0}"
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: >-
+        Server=sqlserver,1433;Database=${SQLSERVER_DATABASE:-FITX};
+        User Id=sa;Password=${SQLSERVER_SA_PASSWORD};
+        Encrypt=True;TrustServerCertificate=True
+      Jwt__Secret: "${JWT_SECRET:?Set JWT_SECRET in .env}"
+      Jwt__Issuer: "${JWT_ISSUER:-FITX.API}"
+      Jwt__Audience: "${JWT_AUDIENCE:-FITX.Web}"
+      Jwt__AccessTokenMinutes: "${JWT_ACCESS_TOKEN_MINUTES:-15}"
+      Jwt__RefreshTokenDays: "${JWT_REFRESH_TOKEN_DAYS:-7}"
+      Jwt__RememberMeRefreshTokenDays: "${JWT_REMEMBER_ME_REFRESH_TOKEN_DAYS:-30}"
+      Cors__AllowedOrigins__0: "${CORS_ALLOWED_ORIGIN:-http://localhost:3000}"
+      Database__ApplyMigrations: "${APPLY_MIGRATIONS:-true}"
+      Seed__DemoData: "${SEED_DEMO_DATA:-true}"
+      Seed__DevelopmentAdmin: "${SEED_DEVELOPMENT_ADMIN:-true}"
+      Seed__DevelopmentAdminEmail: "${DEVELOPMENT_ADMIN_EMAIL:-admin@fitx.local}"
+      Seed__DevelopmentAdminPassword: "${DEVELOPMENT_ADMIN_PASSWORD:-Fitx@123}"
+      GymDefaults__Currency: "${GYM_DEFAULT_CURRENCY:-PKR}"
+      GymDefaults__Timezone: "${GYM_DEFAULT_TIMEZONE:-Asia/Karachi}"
+      Membership__ExpiringSoonDays: "${MEMBERSHIP_EXPIRING_SOON_DAYS:-7}"
+      ReminderProviders__Mode: "${REMINDER_PROVIDER_MODE:-Mock}"
+      ReminderProviders__Email__Provider: "${EMAIL_PROVIDER:-Mock}"
+      ReminderProviders__Email__ApiKey: "${EMAIL_API_KEY:-}"
+      ReminderProviders__Email__FromAddress: "${EMAIL_FROM_ADDRESS:-}"
+      ReminderProviders__Sms__Provider: "${SMS_PROVIDER:-Mock}"
+      ReminderProviders__Sms__ApiKey: "${SMS_API_KEY:-}"
+      ReminderProviders__Sms__SenderId: "${SMS_SENDER_ID:-}"
+      ReminderProviders__WhatsApp__Provider: "${WHATSAPP_PROVIDER:-Mock}"
+      ReminderProviders__WhatsApp__ApiKey: "${WHATSAPP_API_KEY:-}"
+      ReminderProviders__WhatsApp__SenderId: "${WHATSAPP_SENDER_ID:-}"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - fitx
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: runtime
+      args:
+        NODE_VERSION: "${NODE_VERSION:-22}"
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}"
+        DEFAULT_LOCALE: "${DEFAULT_LOCALE:-en}"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}"
+      INTERNAL_API_BASE_URL: "${INTERNAL_API_BASE_URL:-http://api:8080/api}"
+      NEXT_PUBLIC_DEFAULT_LOCALE: "${DEFAULT_LOCALE:-en}"
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - fitx
+
+volumes:
+  sqlserver_data:
+
+networks:
+  fitx:
+    driver: bridge

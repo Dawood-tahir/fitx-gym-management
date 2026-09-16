@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+ARG NODE_VERSION=22
+
+FROM node:${NODE_VERSION}-alpine AS dependencies
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+FROM dependencies AS development
+COPY frontend/ ./
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
+
+FROM dependencies AS build
+ARG NEXT_PUBLIC_API_URL
+ARG DEFAULT_LOCALE=en
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_DEFAULT_LOCALE=${DEFAULT_LOCALE}
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY frontend/ ./
+RUN npm run build
+
+FROM node:${NODE_VERSION}-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=build --chown=node:node /app ./
+USER node
+EXPOSE 3000
+CMD ["npm", "run", "start", "--", "--hostname", "0.0.0.0"]

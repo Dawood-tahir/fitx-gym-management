@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1.7
+ARG DOTNET_VERSION=9.0
+
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
+WORKDIR /src
+COPY backend/ ./backend/
+RUN dotnet restore backend/FITX.API/FITX.API.csproj
+
+FROM build AS development
+WORKDIR /src/backend/FITX.API
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+CMD ["dotnet", "watch", "run", "--no-launch-profile"]
+
+FROM build AS publish
+RUN dotnet publish backend/FITX.API/FITX.API.csproj \
+    --configuration Release \
+    --no-restore \
+    --output /app/publish \
+    /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
+WORKDIR /app
+COPY --from=publish /app/publish ./
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+USER app
+ENTRYPOINT ["dotnet", "FITX.API.dll"]

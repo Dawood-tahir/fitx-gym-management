@@ -1,0 +1,58 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/appsettings.Development.json
+**/appsettings.Production.json
+!**/appsettings.*.json.example
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Next.js / Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/.turbo/
+frontend/.vercel/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# .NET
+backend/**/bin/
+backend/**/obj/
+backend/**/TestResults/
+backend/**/coverage/
+backend/**/coverage.*
+backend/.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Runtime-generated content
+logs/
+exports/
+uploads/
+tmp/
+*.log
+
+# Local database and container state
+*.mdf
+*.ldf
+.docker/
+
