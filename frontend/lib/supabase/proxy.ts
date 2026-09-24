@@ -36,13 +36,39 @@ export async function updateSession(request: NextRequest) {
   });
 
   const { data } = await supabase.auth.getClaims();
-  const isAuthenticated = Boolean(data?.claims?.sub);
+  const userId = data?.claims?.sub;
+  const isAuthenticated = Boolean(userId);
 
   if (!isAuthenticated && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // A valid Supabase session alone is not sufficient for FITX access. Keep the
+  // browser route gate aligned with the RLS predicate used by the data layer so
+  // disabled (or unprovisioned) accounts cannot continue into the app shell.
+  if (isAuthenticated && !isPublicPath(pathname)) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_active,role")
+      .eq("id", userId!)
+      .maybeSingle();
+
+    if (!profile?.is_active) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (pathname === "/reports" && profile.role !== "owner" && profile.role !== "admin") {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "";
+      return NextResponse.redirect(dashboardUrl);
+    }
   }
 
   if (isAuthenticated && pathname === "/login") {
