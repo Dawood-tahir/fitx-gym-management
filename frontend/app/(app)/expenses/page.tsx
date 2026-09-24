@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, Pencil, Plus, ReceiptText, Search, Tags, Trash2, TrendingUp } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage, todayInput } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";

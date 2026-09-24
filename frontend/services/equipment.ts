@@ -51,8 +51,8 @@ export const equipmentService = {
       const pattern = `%${search}%`;
       query = query.or(`name.ilike.${pattern},category.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern},serial_number.ilike.${pattern}`);
     }
-    if (params.status) query = query.eq("status", String(params.status).toLowerCase());
-    if (params.condition) query = query.eq("condition", String(params.condition).toLowerCase());
+    if (params.status) query = query.eq("status", String(params.status).toLowerCase() as EquipmentRow["status"]);
+    if (params.condition) query = query.eq("condition", String(params.condition).toLowerCase() as EquipmentRow["condition"]);
     if (params.category) query = query.ilike("category", String(params.category));
     const { data, error, count } = await query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
     throwIfError(error, "Equipment could not be loaded.");

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarRange, CircleDollarSign, Pencil, Plus, Search, ShieldCheck, Tag, XCircle } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, getErrorMessage } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useAuth } from "@/components/auth-provider";

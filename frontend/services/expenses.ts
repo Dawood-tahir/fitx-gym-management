@@ -55,8 +55,10 @@ export const expensesService = {
     }
     if (params.categoryId) query = query.eq("category_id", String(params.categoryId));
     if (params.paymentMethodId) query = query.eq("payment_method_id", String(params.paymentMethodId));
-    if (params.dateFrom) query = query.gte("expense_date", String(params.dateFrom));
-    if (params.dateTo) query = query.lte("expense_date", String(params.dateTo));
+    const dateFrom = params.dateFrom ?? params.from;
+    const dateTo = params.dateTo ?? params.to;
+    if (dateFrom) query = query.gte("expense_date", String(dateFrom));
+    if (dateTo) query = query.lte("expense_date", String(dateTo));
     const { data, error, count } = await query
       .order("expense_date", { ascending: false })
       .range(from, from + pageSize - 1);

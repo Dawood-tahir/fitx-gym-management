@@ -10,7 +10,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";

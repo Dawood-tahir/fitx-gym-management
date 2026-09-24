@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, getErrorMessage, todayInput } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
 import { useToast } from "@/components/toast-provider";

@@ -92,8 +92,10 @@ export const paymentsService = {
     if (memberIds) query = query.in("member_id", memberIds);
     if (params.memberId) query = query.eq("member_id", String(params.memberId));
     if (params.paymentMethodId || params.methodId) query = query.eq("payment_method_id", String(params.paymentMethodId ?? params.methodId));
-    if (params.dateFrom) query = query.gte("payment_date", `${params.dateFrom}T00:00:00`);
-    if (params.dateTo) query = query.lt("payment_date", `${params.dateTo}T23:59:59.999`);
+    const dateFrom = params.dateFrom ?? params.from;
+    const dateTo = params.dateTo ?? params.to;
+    if (dateFrom) query = query.gte("payment_date", `${dateFrom}T00:00:00`);
+    if (dateTo) query = query.lte("payment_date", `${dateTo}T23:59:59.999`);
     if (params.status === "Voided") query = query.eq("is_voided", true);
     if (params.status === "Paid") query = query.eq("is_voided", false);
 

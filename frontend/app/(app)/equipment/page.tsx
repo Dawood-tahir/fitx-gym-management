@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Archive, Dumbbell, Pencil, Plus, Search } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";

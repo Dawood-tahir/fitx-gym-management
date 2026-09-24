@@ -1,6 +1,5 @@
 import type { PagedResult } from "@/types/api";
 import type { Json } from "@/types/database";
-import type { Json } from "@/types/database";
 
 export function pageResult<T>(items: T[], page: number, pageSize: number, count: number | null): PagedResult<T> {
   const totalCount = count ?? items.length;
@@ -38,16 +37,6 @@ export function percentChange(current: number, previous: number) {
 }
 
 export function jsonRecord(value: Json | null | undefined): Record<string, Json | undefined> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, Json | undefined>
-    : {};
-}
-
-export function jsonArray(value: Json | undefined): Json[] {
-  return Array.isArray(value) ? value : [];
-}
-
-export function jsonRecord(value: Json | undefined): Record<string, Json | undefined> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, Json | undefined>
     : {};

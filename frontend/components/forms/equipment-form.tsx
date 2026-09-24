@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { getErrorMessage, todayInput } from "@/lib/utils";
 import { useToast } from "@/components/toast-provider";
 import { Button } from "@/components/ui/button";

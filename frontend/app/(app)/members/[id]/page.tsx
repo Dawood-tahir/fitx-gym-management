@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, CreditCard, Mail, MapPin, Pencil, Phone, RefreshCw, Trash2, UserRound } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage, initials } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";

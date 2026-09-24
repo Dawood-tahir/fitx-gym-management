@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, CalendarDays, CheckCheck, ChevronDown, Languages, Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatDate, initials } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
 import { useAuth } from "@/components/auth-provider";
 import type { NotificationItem } from "@/types/api";
+import { Logo } from "./logo";
 
 export function Topbar({ collapsed, onToggleSidebar, onOpenMobile }: { collapsed: boolean; onToggleSidebar: () => void; onOpenMobile: () => void }) {
   const { locale, setLocale, t } = useLocale();
@@ -32,15 +33,16 @@ export function Topbar({ collapsed, onToggleSidebar, onOpenMobile }: { collapsed
   }, []);
 
   const unread = notifications.filter((item) => !item.isRead).length;
-  return <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-white/[.055] bg-[#0a1317]/90 px-3 backdrop-blur-xl sm:px-5">
-    <button onClick={onOpenMobile} className="rounded-lg p-2 text-foreground hover:bg-white/5 lg:hidden" aria-label={t("nav.openMenu")}><Menu className="size-5" /></button>
+  return <header className="sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-2 border-b border-white/[.055] bg-[#0a1317]/90 px-3 pt-[env(safe-area-inset-top)] backdrop-blur-xl sm:px-5">
+    <button onClick={onOpenMobile} className="flex size-11 items-center justify-center rounded-xl text-foreground hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:hidden" aria-label={t("nav.openMenu")}><Menu className="size-5" /></button>
+    <div className="pointer-events-none absolute start-1/2 -translate-x-1/2 lg:hidden"><Logo compact /></div>
     <button onClick={onToggleSidebar} className="hidden rounded-lg p-2 text-secondary hover:bg-white/5 hover:text-foreground lg:block" aria-label="Toggle sidebar">{collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}</button>
     <div className="relative me-auto hidden w-full max-w-[360px] sm:block">
       <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
       <input value={term} onChange={(event) => setTerm(event.target.value)} onFocus={() => setSearchOpen(true)} placeholder={t("nav.searchPlaceholder")} className="h-9 w-full rounded-full border border-white/[.055] bg-white/[.055] ps-10 pe-4 text-xs text-foreground outline-none transition placeholder:text-muted focus:border-primary/25 focus:bg-white/[.075]" />
       {searchOpen && term.length >= 2 && <div className="absolute inset-x-0 top-11 overflow-hidden rounded-xl border border-white/10 bg-elevated p-2 shadow-2xl"><div className="mb-1 flex items-center justify-between px-2 py-1 text-[10px] uppercase tracking-wider text-muted"><span>Search results</span><button onClick={() => setSearchOpen(false)}><X className="size-3" /></button></div>{results.length ? results.map((result) => <Link key={`${result.type}-${result.id}`} href={result.type.toLowerCase().includes("member") ? `/members/${result.id}` : result.type.toLowerCase().includes("payment") ? `/payments/${result.id}/receipt` : "/dashboard"} onClick={() => { setSearchOpen(false); setTerm(""); }} className="block rounded-lg px-3 py-2 hover:bg-white/5"><p className="text-xs font-semibold">{result.title}</p><p className="text-[10px] text-muted">{result.type}{result.subtitle ? ` · ${result.subtitle}` : ""}</p></Link>) : <p className="px-3 py-4 text-center text-xs text-muted">{t("common.noResults")}</p>}</div>}
     </div>
-    <button onClick={() => setSearchOpen(true)} className="rounded-lg p-2 text-secondary hover:bg-white/5 sm:hidden" aria-label={t("common.search")}><Search className="size-5" /></button>
+    <span className="me-auto lg:hidden" />
     <div className="hidden items-center gap-2 text-[11px] font-medium text-secondary xl:flex"><CalendarDays className="size-4 text-foreground" /><time dateTime={new Date().toISOString()}>{formatDate(new Date().toISOString(), locale)}</time></div>
     <div className="mx-1 hidden h-5 w-px bg-white/10 md:block" />
     <label className="relative flex items-center"><Languages className="pointer-events-none absolute start-2 size-4 text-secondary" /><select value={locale} onChange={(event) => setLocale(event.target.value as "en" | "ur")} aria-label="Language" className="h-9 appearance-none rounded-lg border border-white/[.07] bg-white/[.035] ps-8 pe-7 text-[11px] text-secondary outline-none hover:bg-white/[.06]"><option value="en">EN</option><option value="ur">اردو</option></select><ChevronDown className="pointer-events-none absolute end-2 size-3 text-muted" /></label>

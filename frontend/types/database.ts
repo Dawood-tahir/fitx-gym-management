@@ -1,9 +1,9 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
-  Row: Row;
-  Insert: Insert;
-  Update: Update;
+  Row: Row & Record<string, unknown>;
+  Insert: Insert & Record<string, unknown>;
+  Update: Update & Record<string, unknown>;
   Relationships: [];
 };
 
@@ -273,7 +273,7 @@ export interface Database {
     };
     Views: {
       member_overview: {
-        Row: MemberOverviewRow;
+        Row: MemberOverviewRow & Record<string, unknown>;
         Relationships: [];
       };
     };

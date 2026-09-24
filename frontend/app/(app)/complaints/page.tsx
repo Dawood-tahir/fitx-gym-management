@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Eye, MessageSquare, Pencil, Plus, Search } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatDate } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";

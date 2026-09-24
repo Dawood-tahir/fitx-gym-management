@@ -35,7 +35,7 @@ export const staffService = {
       const pattern = `%${search}%`;
       query = query.or(`full_name.ilike.${pattern},phone.ilike.${pattern},email.ilike.${pattern},position.ilike.${pattern}`);
     }
-    if (params.status) query = query.eq("status", String(params.status).toLowerCase());
+    if (params.status) query = query.eq("status", String(params.status).toLowerCase() as StaffRow["status"]);
     if (params.position) query = query.ilike("position", String(params.position));
     const { data, error, count } = await query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
     throwIfError(error, "Staff records could not be loaded.");

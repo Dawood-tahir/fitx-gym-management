@@ -42,9 +42,9 @@ export const complaintsService = {
       const pattern = `%${search}%`;
       query = query.or(`subject.ilike.${pattern},message.ilike.${pattern},name.ilike.${pattern},phone.ilike.${pattern}`);
     }
-    if (params.status) query = query.eq("status", String(params.status).toLowerCase());
-    if (params.priority) query = query.eq("priority", String(params.priority).toLowerCase());
-    if (params.type) query = query.eq("type", String(params.type).toLowerCase());
+    if (params.status) query = query.eq("status", String(params.status).toLowerCase() as ComplaintRow["status"]);
+    if (params.priority) query = query.eq("priority", String(params.priority).toLowerCase() as ComplaintRow["priority"]);
+    if (params.type) query = query.eq("type", String(params.type).toLowerCase() as ComplaintRow["type"]);
     const { data, error, count } = await query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
     throwIfError(error, "Complaints and feedback could not be loaded.");
     return pageResult(await enrich(data ?? []), page, pageSize, count);

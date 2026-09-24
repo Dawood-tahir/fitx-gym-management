@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, Banknote, Ban, CircleDollarSign, Plus, Search, Users } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage, todayInput } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useAuth } from "@/components/auth-provider";
