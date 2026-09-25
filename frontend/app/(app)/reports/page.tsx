@@ -14,13 +14,18 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 
 type Preset = "today" | "week" | "month" | "lastMonth" | "year" | "custom";
-const iso = (date: Date) => date.toISOString().slice(0, 10);
+const iso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const currentPeriodStart = (date: Date) => {
+  const start = new Date(date.getFullYear(), date.getMonth(), 10);
+  if (date.getDate() < 10) start.setMonth(start.getMonth() - 1);
+  return start;
+};
 function rangeFor(preset: Preset, custom: ReportRange): ReportRange {
   const now = new Date(); const today = todayInput();
   if (preset === "today") return { from: today, to: today };
   if (preset === "week") { const start = new Date(now); start.setDate(now.getDate() - ((now.getDay() + 6) % 7)); return { from: iso(start), to: today }; }
-  if (preset === "month") return { from: `${today.slice(0, 8)}01`, to: today };
-  if (preset === "lastMonth") { const start = new Date(now.getFullYear(), now.getMonth() - 1, 1); const end = new Date(now.getFullYear(), now.getMonth(), 0); return { from: iso(start), to: iso(end) }; }
+  if (preset === "month") return { from: iso(currentPeriodStart(now)), to: today };
+  if (preset === "lastMonth") { const start = currentPeriodStart(now); const end = new Date(start); end.setDate(end.getDate() - 1); start.setMonth(start.getMonth() - 1); return { from: iso(start), to: iso(end) }; }
   if (preset === "year") return { from: `${today.slice(0, 4)}-01-01`, to: today };
   return custom;
 }
@@ -33,7 +38,7 @@ function Chart({ title, data, color, dataKey }: { title: string; data: ReportsDa
 }
 
 export default function ReportsPage() {
-  const { locale } = useLocale(); const [preset, setPreset] = useState<Preset>("month"); const [custom, setCustom] = useState<ReportRange>({ from: `${todayInput().slice(0, 8)}01`, to: todayInput() });
+  const { locale } = useLocale(); const [preset, setPreset] = useState<Preset>("month"); const [custom, setCustom] = useState<ReportRange>(() => { const now = new Date(); return { from: iso(currentPeriodStart(now)), to: todayInput() }; });
   const range = useMemo(() => rangeFor(preset, custom), [preset, custom]);
   const { data, error, loading, reload } = useApiQuery(() => reportsService.get(range), [range.from, range.to]);
   const exportCsv = () => {
