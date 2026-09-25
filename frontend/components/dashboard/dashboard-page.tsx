@@ -7,7 +7,7 @@ import {
   ReceiptText, TrendingUp, UserPlus, Users,
 } from "lucide-react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, Pie, PieChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { api } from "@/services";
@@ -17,7 +17,7 @@ import { useLocale } from "@/components/locale-provider";
 import { useAuth } from "@/components/auth-provider";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/form-controls";
-import { ErrorState, LoadingState } from "@/components/ui/states";
+import { ErrorState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { DashboardData, DistributionPoint } from "@/types/api";
 

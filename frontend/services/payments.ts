@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { currentBusinessRange, timestampBounds } from "@/lib/business-period";
 import type { PagedResult, Payment, PaymentInput, PaymentSummary } from "@/types/api";
 import type { Json, MemberRow, MembershipPlanRow, PaymentMethodRow, PaymentRow, ProfileRow, SubscriptionRow } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
@@ -94,8 +95,8 @@ export const paymentsService = {
     if (params.paymentMethodId || params.methodId) query = query.eq("payment_method_id", String(params.paymentMethodId ?? params.methodId));
     const dateFrom = params.dateFrom ?? params.from;
     const dateTo = params.dateTo ?? params.to;
-    if (dateFrom) query = query.gte("payment_date", `${dateFrom}T00:00:00`);
-    if (dateTo) query = query.lte("payment_date", `${dateTo}T23:59:59.999`);
+    if (dateFrom) query = query.gte("payment_date", timestampBounds({ from: String(dateFrom), to: String(dateFrom) }).from);
+    if (dateTo) query = query.lt("payment_date", timestampBounds({ from: String(dateTo), to: String(dateTo) }).toExclusive);
     if (params.status === "Voided") query = query.eq("is_voided", true);
     if (params.status === "Paid") query = query.eq("is_voided", false);
 
@@ -148,9 +149,7 @@ export const paymentsService = {
   },
 
   async summary(): Promise<PaymentSummary> {
-    const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const { from, to } = currentBusinessRange();
     const supabase = createClient();
     const [reportResult, paidResult, unpaidResult] = await Promise.all([
       supabase.rpc("report_summary", { p_from: from, p_to: to }),

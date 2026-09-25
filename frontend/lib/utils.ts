@@ -16,7 +16,7 @@ export function formatCurrency(value: number, locale: "en" | "ur" = "en", curren
 
 export function formatDate(value?: string, locale: "en" | "ur" = "en") {
   if (!value) return "—";
-  const date = new Date(value);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale === "ur" ? "ur-PK" : "en-GB", {
     day: "2-digit",
@@ -30,9 +30,12 @@ export function todayInput() {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-export function addMonths(date: string, months: number) {
-  const result = new Date(`${date}T12:00:00`);
-  result.setMonth(result.getMonth() + months);
+export function membershipEndDate(date: string, months: number) {
+  const [year, month, day] = date.split("-").map(Number);
+  const targetMonthIndex = month - 1 + months;
+  const lastTargetDay = new Date(Date.UTC(year, targetMonthIndex + 1, 0)).getUTCDate();
+  const result = new Date(Date.UTC(year, targetMonthIndex, Math.min(day, lastTargetDay)));
+  result.setUTCDate(result.getUTCDate() - 1);
   return result.toISOString().slice(0, 10);
 }
 

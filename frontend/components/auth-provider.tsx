@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { authService } from "@/services/auth";
 import type { AuthSession, User } from "@/types/api";
 
@@ -16,6 +17,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -38,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   const logout = useCallback(async () => {
     try { await authService.logout(); }
-    finally { setSession(null); window.location.assign("/login"); }
-  }, []);
+    finally { setSession(null); router.replace("/login"); router.refresh(); }
+  }, [router]);
   const can = useCallback((...roles: User["role"][]) => Boolean(session?.user && roles.includes(session.user.role)), [session]);
   const value = useMemo(() => ({ user: session?.user ?? null, session, ready, login, logout, can }), [session, ready, login, logout, can]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

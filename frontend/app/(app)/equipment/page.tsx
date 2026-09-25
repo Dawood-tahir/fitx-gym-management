@@ -6,6 +6,7 @@ import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";
+import { useAuth } from "@/components/auth-provider";
 import { useToast } from "@/components/toast-provider";
 import { EquipmentFormDialog } from "@/components/forms/equipment-form";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ import type { Equipment } from "@/types/api";
 
 export default function EquipmentPage() {
   const { locale } = useLocale();
+  const { can } = useAuth();
+  const canManage = can("OWNER", "ADMIN");
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -77,7 +80,7 @@ export default function EquipmentPage() {
       <PageHeader
         title="Equipment"
         description="Track gym assets, condition, status, and maintenance dates."
-        actions={<Button onClick={openCreate}><Plus className="size-4" />Add equipment</Button>}
+        actions={canManage ? <Button onClick={openCreate}><Plus className="size-4" />Add equipment</Button> : undefined}
       />
 
       <Card className="p-3 sm:p-4">
@@ -118,7 +121,7 @@ export default function EquipmentPage() {
             <EmptyState
               title="No equipment found"
               description={search || status || condition ? "Try changing your search or filters." : "Add the first asset to start the equipment register."}
-              action={<Button size="sm" onClick={openCreate}><Plus className="size-4" />Add equipment</Button>}
+              action={canManage ? <Button size="sm" onClick={openCreate}><Plus className="size-4" />Add equipment</Button> : undefined}
             />
           ) : (
             <>
@@ -145,7 +148,7 @@ export default function EquipmentPage() {
                         <td className="px-3 py-3"><StatusBadge status={equipment.status} /></td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary"><p>{formatDate(equipment.purchaseDate, locale)}</p>{equipment.purchasePrice !== undefined && <p className="mt-0.5 font-medium text-foreground">{formatCurrency(equipment.purchasePrice, locale)}</p>}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary">{formatDate(equipment.nextMaintenanceDate, locale)}</td>
-                        <td className="px-3 py-3"><div className="flex justify-end gap-1"><button onClick={() => openEdit(equipment)} className="rounded-lg p-2 text-secondary hover:bg-white/5 hover:text-primary" aria-label={`Edit ${equipment.name}`}><Pencil className="size-4" /></button>{equipment.status !== "Retired" && <button onClick={() => setRetiring(equipment)} className="rounded-lg p-2 text-secondary hover:bg-danger/10 hover:text-danger" aria-label={`Retire ${equipment.name}`}><Archive className="size-4" /></button>}</div></td>
+                        <td className="px-3 py-3">{canManage ? <div className="flex justify-end gap-1"><button onClick={() => openEdit(equipment)} className="rounded-lg p-2 text-secondary hover:bg-white/5 hover:text-primary" aria-label={`Edit ${equipment.name}`}><Pencil className="size-4" /></button>{equipment.status !== "Retired" && <button onClick={() => setRetiring(equipment)} className="rounded-lg p-2 text-secondary hover:bg-danger/10 hover:text-danger" aria-label={`Retire ${equipment.name}`}><Archive className="size-4" /></button>}</div> : <span className="block text-end text-muted">View only</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -157,7 +160,7 @@ export default function EquipmentPage() {
                   <article key={equipment.id} className="rounded-xl border border-white/[.08] bg-white/[.02] p-4">
                     <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold">{equipment.name}</h3><p className="mt-1 truncate text-xs text-secondary">{equipment.category || "Uncategorized"}</p></div><StatusBadge status={equipment.status} /></div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-[10px] text-muted">Condition</dt><dd className="mt-1"><StatusBadge status={equipment.condition} /></dd></div><div><dt className="text-[10px] text-muted">Serial number</dt><dd className="mt-0.5 truncate text-secondary">{equipment.serialNumber || "—"}</dd></div><div><dt className="text-[10px] text-muted">Last maintenance</dt><dd className="mt-0.5 text-secondary">{formatDate(equipment.lastMaintenanceDate, locale)}</dd></div><div><dt className="text-[10px] text-muted">Next maintenance</dt><dd className="mt-0.5 text-secondary">{formatDate(equipment.nextMaintenanceDate, locale)}</dd></div></dl>
-                    <div className="mt-4 flex gap-2 border-t border-white/[.055] pt-3"><Button variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(equipment)}><Pencil className="size-4" />Edit</Button>{equipment.status !== "Retired" && <Button variant="danger" size="sm" className="flex-1" onClick={() => setRetiring(equipment)}><Archive className="size-4" />Retire</Button>}</div>
+                    {canManage && <div className="mt-4 flex gap-2 border-t border-white/[.055] pt-3"><Button variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(equipment)}><Pencil className="size-4" />Edit</Button>{equipment.status !== "Retired" && <Button variant="danger" size="sm" className="flex-1" onClick={() => setRetiring(equipment)}><Archive className="size-4" />Retire</Button>}</div>}
                   </article>
                 ))}
               </div>
@@ -168,7 +171,7 @@ export default function EquipmentPage() {
         </div>
       </Card>
 
-      <EquipmentFormDialog open={formOpen} equipment={editing} onClose={closeForm} onSaved={reload} />
+      {canManage && <EquipmentFormDialog open={formOpen} equipment={editing} onClose={closeForm} onSaved={reload} />}
       <Dialog
         open={Boolean(retiring)}
         onClose={() => { if (!retiringBusy) setRetiring(null); }}

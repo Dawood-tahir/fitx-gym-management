@@ -13,6 +13,7 @@ import { Field, Input } from "@/components/ui/form-controls";
 import { useLocale } from "@/components/locale-provider";
 import { useAuth } from "@/components/auth-provider";
 import { getErrorMessage } from "@/lib/utils";
+import { safeDestination } from "@/lib/access";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -46,17 +47,7 @@ export default function LoginPage() {
       const destination = new URLSearchParams(window.location.search).get(
         "next",
       );
-      router.replace(
-        destination?.startsWith("/") &&
-          !(
-            signedInUser.role === "STAFF" &&
-            destination.startsWith("/dashboard")
-          )
-          ? destination
-          : signedInUser.role === "STAFF"
-            ? "/members"
-            : "/dashboard",
-      );
+      router.replace(safeDestination(destination, signedInUser.role));
       router.refresh();
     } catch (error) {
       setServerError(getErrorMessage(error, t("auth.invalid")));

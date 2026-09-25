@@ -358,7 +358,7 @@ function PaymentSummaryCards({ summary, loading, error, locale, onRetry }: {
   if (!summary) return null;
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard icon={<CircleDollarSign />} label="Payments this month" value={formatCurrency(summary.paymentsThisMonth, locale)} tone="green" />
+      <SummaryCard icon={<CircleDollarSign />} label="Payments this period (10th–9th)" value={formatCurrency(summary.paymentsThisMonth, locale)} tone="green" />
       <SummaryCard icon={<Banknote />} label="Outstanding amount" value={formatCurrency(summary.outstandingAmount, locale)} tone="warning" />
       <SummaryCard icon={<Users />} label="Paid members" value={String(summary.paidMembers)} tone="blue" />
       <SummaryCard icon={<AlertTriangle />} label="Unpaid members" value={String(summary.unpaidMembers)} tone="danger" />

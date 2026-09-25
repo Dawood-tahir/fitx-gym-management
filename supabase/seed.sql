@@ -1,0 +1,1 @@
+-- Intentionally empty. Production-safe defaults are created by migrations.

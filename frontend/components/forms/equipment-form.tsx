@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { api } from "@/services";
 import { getErrorMessage, todayInput } from "@/lib/utils";
 import { useToast } from "@/components/toast-provider";
@@ -48,7 +48,7 @@ export function EquipmentFormDialog({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<EquipmentFormValues>();
 
@@ -71,7 +71,7 @@ export function EquipmentFormDialog({
     setServerError("");
   }, [equipment, open, reset]);
 
-  const lastMaintenanceDate = watch("lastMaintenanceDate");
+  const lastMaintenanceDate = useWatch({ control, name: "lastMaintenanceDate" });
   const submit = async (values: EquipmentFormValues) => {
     setServerError("");
     const body: EquipmentInput = {

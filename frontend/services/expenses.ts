@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { currentBusinessRange, previousBusinessRange } from "@/lib/business-period";
 import type { Expense, ExpenseInput, ExpenseSummary, PagedResult } from "@/types/api";
 import type { ExpenseCategoryRow, ExpenseRow, Json, PaymentMethodRow, ProfileRow } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
@@ -127,11 +128,12 @@ export const expensesService = {
   },
 
   async summary(): Promise<ExpenseSummary> {
-    const now = new Date();
-    const thisFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    const thisTo = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-    const previousFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
-    const previousTo = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
+    const current = currentBusinessRange();
+    const previous = previousBusinessRange();
+    const thisFrom = current.from;
+    const thisTo = current.to;
+    const previousFrom = previous.from;
+    const previousTo = previous.to;
     const supabase = createClient();
     const [currentResult, previousResult, categoryRowsResult] = await Promise.all([
       supabase.rpc("report_summary", { p_from: thisFrom, p_to: thisTo }),
@@ -141,10 +143,10 @@ export const expensesService = {
     throwIfError(currentResult.error, "Expense totals could not be loaded.");
     throwIfError(previousResult.error, "Previous expense totals could not be loaded.");
     throwIfError(categoryRowsResult.error, "Expense categories could not be summarized.");
-    const current = jsonRecord(currentResult.data as Json);
-    const previous = jsonRecord(previousResult.data as Json);
-    const currentTotal = numberValue(current.total_expenses as number | string | null | undefined);
-    const previousTotal = numberValue(previous.total_expenses as number | string | null | undefined);
+    const currentReport = jsonRecord(currentResult.data as Json);
+    const previousReport = jsonRecord(previousResult.data as Json);
+    const currentTotal = numberValue(currentReport.total_expenses as number | string | null | undefined);
+    const previousTotal = numberValue(previousReport.total_expenses as number | string | null | undefined);
     const byCategory = new Map<string, number>();
     (categoryRowsResult.data ?? []).forEach((row) => byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + numberValue(row.amount)));
     const largestId = [...byCategory.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];

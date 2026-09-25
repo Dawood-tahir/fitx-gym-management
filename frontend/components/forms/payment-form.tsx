@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { api } from "@/services";
 import { formatCurrency, getErrorMessage, todayInput } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
@@ -43,7 +43,7 @@ export function PaymentFormDialog({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<Values>();
@@ -73,10 +73,10 @@ export function PaymentFormDialog({
       notes: "",
     });
   }, [open, presetMember, reset]);
-  const memberId = watch("memberId");
-  const totalFee = Number(watch("totalFee") || 0);
-  const discount = Number(watch("discount") || 0);
-  const amountPaid = Number(watch("amountPaid") || 0);
+  const [memberId, watchedTotalFee, watchedDiscount, watchedAmountPaid] = useWatch({ control, name: ["memberId", "totalFee", "discount", "amountPaid"] });
+  const totalFee = Number(watchedTotalFee || 0);
+  const discount = Number(watchedDiscount || 0);
+  const amountPaid = Number(watchedAmountPaid || 0);
   const selected = members.find((member) => member.id === memberId);
   const payable = Math.max(0, totalFee - discount);
   const remaining = Math.max(0, (selected?.balance ?? payable) - amountPaid);

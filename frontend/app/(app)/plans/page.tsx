@@ -33,7 +33,7 @@ export default function PlansPage() {
   const [deactivating, setDeactivating] = useState<MembershipPlan | null>(null);
   const [deactivateBusy, setDeactivateBusy] = useState(false);
   const { data: plans, error, loading, reload } = useApiQuery(() => api.plans.list(), []);
-  const canManage = can("OWNER", "ADMIN");
+  const canManage = can("OWNER");
 
   const filteredPlans = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
@@ -192,7 +192,7 @@ export default function PlansPage() {
       {!canManage && (
         <Card className="flex items-start gap-3 border-info/20 bg-info/[.04] p-4 text-xs text-secondary">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-info" />
-          <p>You can review membership plans. An owner or administrator is required to create, edit, or deactivate them.</p>
+          <p>You can review membership plans. An owner is required to create, edit, or deactivate them.</p>
         </Card>
       )}
 

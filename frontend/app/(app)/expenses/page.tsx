@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDownRight, ArrowUpRight, Pencil, Plus, ReceiptText, Search, Tags, Trash2, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Pencil, Plus, ReceiptText, Search, Tags, Trash2 } from "lucide-react";
 import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage, todayInput } from "@/lib/utils";
 import { useApiQuery } from "@/hooks/use-api-query";
@@ -317,7 +317,7 @@ function ExpenseSummaryCards({ summary, loading, error, locale, onRetry }: {
   const increased = summary.changePercentFromLastMonth >= 0;
   return (
     <div className="grid gap-3 md:grid-cols-3">
-      <SummaryCard icon={<ReceiptText />} label="Expenses this month" value={formatCurrency(summary.totalThisMonth, locale)} tone="purple" />
+      <SummaryCard icon={<ReceiptText />} label="Expenses this period (10th–9th)" value={formatCurrency(summary.totalThisMonth, locale)} tone="purple" />
       <SummaryCard icon={<Tags />} label="Largest category" value={summary.largestCategory || "No expenses yet"} tone="blue" />
       <Card className="flex min-h-24 items-center gap-3 p-4">
         <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${increased ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>

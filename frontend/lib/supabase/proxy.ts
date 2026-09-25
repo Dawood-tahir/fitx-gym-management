@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./config";
 import type { Database } from "@/types/database";
+import { canAccessRoute, defaultRouteForRole, safeDestination } from "@/lib/access";
 
 const publicRoutes = new Set(["/login", "/forgot-password", "/reset-password"]);
 
@@ -63,9 +64,9 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (pathname === "/reports" && profile.role !== "owner" && profile.role !== "admin") {
+    if (!canAccessRoute(pathname, profile.role)) {
       const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.pathname = defaultRouteForRole(profile.role);
       dashboardUrl.search = "";
       return NextResponse.redirect(dashboardUrl);
     }
@@ -73,8 +74,10 @@ export async function updateSession(request: NextRequest) {
 
   if (isAuthenticated && pathname === "/login") {
     const destination = request.nextUrl.searchParams.get("next");
+    const { data: profile } = await supabase.from("profiles").select("role,is_active").eq("id", userId!).maybeSingle();
+    if (!profile?.is_active) return response;
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = destination?.startsWith("/") ? destination : "/dashboard";
+    dashboardUrl.pathname = safeDestination(destination, profile.role);
     dashboardUrl.search = "";
     return NextResponse.redirect(dashboardUrl);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { api } from "@/services";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast } from "@/components/toast-provider";
@@ -70,7 +70,7 @@ export function ComplaintFormDialog({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ComplaintFormValues>();
 
@@ -90,7 +90,7 @@ export function ComplaintFormDialog({
     setServerError("");
   }, [complaint, open, reset]);
 
-  const memberId = watch("memberId");
+  const memberId = useWatch({ control, name: "memberId" });
   const submit = async (values: ComplaintFormValues) => {
     setServerError("");
     const body: ComplaintInput = {

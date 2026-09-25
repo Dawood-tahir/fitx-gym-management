@@ -35,7 +35,8 @@ export const authService = {
     throwIfError(error, "Your session could not be restored.");
     return appSession(data.session);
   },
-  async login(email: string, password: string, _rememberMe = true) {
+  async login(email: string, password: string, rememberMe = true) {
+    void rememberMe;
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) throw toApiError(error, "The email or password is incorrect.");

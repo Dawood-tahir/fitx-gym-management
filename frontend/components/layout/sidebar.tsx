@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BellRing, CreditCard, Dumbbell, LayoutDashboard, ReceiptText, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, CreditCard, Dumbbell, LayoutDashboard, MessageSquareText, ReceiptText, ShieldCheck, Tags, Users, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
 import { useAuth } from "@/components/auth-provider";
@@ -14,10 +14,11 @@ const items: Array<{ href: string; key: string; icon: typeof LayoutDashboard; ro
   { href: "/members", key: "members", icon: Users, roles: ["OWNER", "ADMIN", "STAFF"] },
   { href: "/payments", key: "payments", icon: CreditCard, roles: ["OWNER", "ADMIN", "STAFF"] },
   { href: "/expenses", key: "expenses", icon: ReceiptText, roles: ["OWNER", "ADMIN"] },
-  { href: "/reminders", key: "reminders", icon: BellRing, roles: ["OWNER", "ADMIN"] },
+  { href: "/plans", key: "plans", icon: Tags, roles: ["OWNER", "ADMIN", "STAFF"] },
+  { href: "/equipment", key: "equipment", icon: Wrench, roles: ["OWNER", "ADMIN", "STAFF"] },
+  { href: "/complaints", key: "complaints", icon: MessageSquareText, roles: ["OWNER", "ADMIN", "STAFF"] },
   { href: "/reports", key: "reports", icon: BarChart3, roles: ["OWNER", "ADMIN"] },
   { href: "/staff", key: "staff", icon: ShieldCheck, roles: ["OWNER"] },
-  { href: "/settings", key: "settings", icon: Settings, roles: ["OWNER"] },
 ];
 
 export function SidebarContent({ collapsed = false, mobile = false, onNavigate }: { collapsed?: boolean; mobile?: boolean; onNavigate?: () => void }) {
