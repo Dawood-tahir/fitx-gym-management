@@ -22,7 +22,7 @@ export const reportsService = {
     const [paymentsResult, expensesResult, membersResult, subscriptionsResult, plansResult, methodsResult, categoriesResult] = await Promise.all([
       supabase.from("payments").select("*").gte("payment_date", `${range.from}T00:00:00`).lte("payment_date", `${range.to}T23:59:59.999`).order("payment_date", { ascending: false }),
       supabase.from("expenses").select("*").eq("is_deleted", false).gte("expense_date", range.from).lte("expense_date", range.to).order("expense_date", { ascending: false }),
-      supabase.from("members").select("id,full_name,status,created_at").gte("created_at", `${range.from}T00:00:00`).lte("created_at", `${range.to}T23:59:59.999`),
+      supabase.from("members").select("id").gte("join_date", range.from).lte("join_date", range.to),
       supabase.from("member_subscriptions").select("*").eq("is_current", true).neq("status", "cancelled"),
       supabase.from("membership_plans").select("id,name"),
       supabase.from("payment_methods").select("id,name"),
