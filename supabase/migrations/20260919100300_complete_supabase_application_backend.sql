@@ -166,8 +166,15 @@ $$;
 create or replace function public.dashboard_summary(p_months integer default 6)
 returns jsonb language sql stable security invoker set search_path = '' as $$
 with bounds as (
-  select date_trunc('month', current_date)::date as this_month,
-    (date_trunc('month', current_date) - make_interval(months => greatest(1, least(p_months, 24)) - 1))::date as first_month
+  select
+    case
+      when extract(day from current_date) >= 10 then make_date(extract(year from current_date)::int, extract(month from current_date)::int, 10)::date
+      else (make_date(extract(year from current_date)::int, extract(month from current_date)::int, 10) - interval '1 month')::date
+    end as this_month,
+    case
+      when extract(day from current_date) >= 10 then (make_date(extract(year from current_date)::int, extract(month from current_date)::int, 10) - make_interval(months => greatest(1, least(p_months, 24)) - 1))::date
+      else ((make_date(extract(year from current_date)::int, extract(month from current_date)::int, 10) - interval '1 month') - make_interval(months => greatest(1, least(p_months, 24)) - 1))::date
+    end as first_month
 ), months as (
   select generate_series((select first_month from bounds), (select this_month from bounds), interval '1 month')::date as month_start
 ), trend as (
@@ -185,9 +192,9 @@ select jsonb_build_object(
     'active_members', (select count(*) from public.member_overview where membership_status = 'active'),
     'expiring_soon', (select count(*) from public.member_overview where membership_status = 'expiring_soon'),
     'unpaid_fees', (select count(*) from public.member_overview where payment_status in ('partial','unpaid')),
-    'monthly_revenue', coalesce((select sum(amount) from public.payments where not is_voided and payment_date >= (select this_month from bounds)), 0),
-    'monthly_expenses', coalesce((select sum(amount) from public.expenses where not is_deleted and expense_date >= (select this_month from bounds)), 0),
-    'net_profit', coalesce((select sum(amount) from public.payments where not is_voided and payment_date >= (select this_month from bounds)), 0) - coalesce((select sum(amount) from public.expenses where not is_deleted and expense_date >= (select this_month from bounds)), 0),
+    'monthly_revenue', coalesce((select sum(amount) from public.payments where not is_voided and payment_date >= (select this_month from bounds) and payment_date < (select this_month from bounds) + interval '1 month'), 0),
+    'monthly_expenses', coalesce((select sum(amount) from public.expenses where not is_deleted and expense_date >= (select this_month from bounds) and expense_date < (select this_month from bounds) + interval '1 month'), 0),
+    'net_profit', coalesce((select sum(amount) from public.payments where not is_voided and payment_date >= (select this_month from bounds) and payment_date < (select this_month from bounds) + interval '1 month'), 0) - coalesce((select sum(amount) from public.expenses where not is_deleted and expense_date >= (select this_month from bounds) and expense_date < (select this_month from bounds) + interval '1 month'), 0),
     'pending_complaints', (select count(*) from public.complaints_feedback where status in ('new','reviewing')),
     'equipment_maintenance', (select count(*) from public.equipment where status = 'maintenance' or next_maintenance_date <= current_date)
   ),

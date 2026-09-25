@@ -144,8 +144,10 @@ public sealed class FinanceService(FitxDbContext db, IAuditWriter audit) : IFina
     public async Task<PaymentSummary> GetPaymentSummaryAsync(CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
-        var start = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
-        var received = await db.Payments.Where(x => !x.IsVoided && x.PaymentDate >= start).SumAsync(x => x.AmountPaid, ct);
+        var cycleStart = now.Day >= 10
+            ? new DateTimeOffset(now.Year, now.Month, 10, 0, 0, 0, TimeSpan.Zero)
+            : new DateTimeOffset(now.Year, now.Month, 10, 0, 0, 0, TimeSpan.Zero).AddMonths(-1);
+        var received = await db.Payments.Where(x => !x.IsVoided && x.PaymentDate >= cycleStart).SumAsync(x => x.AmountPaid, ct);
         var memberships = await db.Memberships.AsNoTracking().Where(x => x.IsCurrent)
             .Select(x => new { x.FinalFee, Paid = x.Payments.Where(p => !p.IsVoided).Sum(p => p.AmountPaid) }).ToListAsync(ct);
         var outstanding = memberships.Sum(x => Math.Max(0, x.FinalFee - x.Paid));
@@ -234,7 +236,9 @@ public sealed class FinanceService(FitxDbContext db, IAuditWriter audit) : IFina
     public async Task<ExpenseSummary> GetExpenseSummaryAsync(CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
-        var currentStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+        var currentStart = now.Day >= 10
+            ? new DateTimeOffset(now.Year, now.Month, 10, 0, 0, 0, TimeSpan.Zero)
+            : new DateTimeOffset(now.Year, now.Month, 10, 0, 0, 0, TimeSpan.Zero).AddMonths(-1);
         var previousStart = currentStart.AddMonths(-1);
         var current = await db.Expenses.Where(x => x.ExpenseDate >= currentStart).SumAsync(x => x.Amount, ct);
         var previous = await db.Expenses.Where(x => x.ExpenseDate >= previousStart && x.ExpenseDate < currentStart).SumAsync(x => x.Amount, ct);

@@ -18,8 +18,11 @@ public sealed class DashboardService(FitxDbContext db) : IDashboardService
         var today = DateOnly.FromDateTime(now.UtcDateTime);
         var warningDays = await db.GymSettings.Select(x => (int?)x.ExpiringSoonDays).FirstOrDefaultAsync(ct) ?? 7;
         var months = range.ToLowerInvariant() switch { "12m" or "last12months" => 12, "year" or "thisyear" => now.Month, _ => 6 };
-        var trendStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero).AddMonths(-(months - 1));
-        var currentStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+        var cycleStart = today.Day >= 10
+            ? new DateOnly(today.Year, today.Month, 10)
+            : new DateOnly(today.Year, today.Month, 10).AddMonths(-1);
+        var trendStart = new DateTimeOffset(cycleStart.Year, cycleStart.Month, cycleStart.Day, 0, 0, 0, TimeSpan.Zero).AddMonths(-(months - 1));
+        var currentStart = new DateTimeOffset(cycleStart.Year, cycleStart.Month, cycleStart.Day, 0, 0, 0, TimeSpan.Zero);
         var previousStart = currentStart.AddMonths(-1);
 
         var revenueRows = await db.Payments.AsNoTracking().Where(x => !x.IsVoided && x.PaymentDate >= trendStart)
