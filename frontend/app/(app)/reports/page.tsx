@@ -26,10 +26,10 @@ function rangeFor(preset: Preset, custom: ReportRange): ReportRange {
 }
 
 function Metric({ label, value, tone = "text-foreground" }: { label: string; value: string; tone?: string }) {
-  return <Card className="p-4"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p><p className={`mt-2 text-2xl font-extrabold tracking-tight ${tone}`}>{value}</p></Card>;
+  return <Card className="p-3 sm:p-4"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p><p className={`mt-1.5 text-2xl font-extrabold tracking-tight sm:mt-2 ${tone}`}>{value}</p></Card>;
 }
 function Chart({ title, data, color, dataKey }: { title: string; data: ReportsData["revenueTrend"]; color: string; dataKey: "revenue" | "expenses" }) {
-  return <Card className="p-4"><h2 className="mb-4 text-sm font-bold">{title}</h2><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ left: -20 }}><CartesianGrid stroke="#344047" strokeOpacity={0.3} strokeDasharray="2 2" vertical={false} /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} tickLine={false} axisLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ background: "#101a1f", border: "1px solid #344047", borderRadius: 8 }} /><Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div></Card>;
+  return <Card className="p-3 sm:p-4"><h2 className="mb-2.5 text-sm font-bold sm:mb-4">{title}</h2><div className="h-40 sm:h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ left: -20 }}><CartesianGrid stroke="#344047" strokeOpacity={0.3} strokeDasharray="2 2" vertical={false} /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} tickLine={false} axisLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ background: "#101a1f", border: "1px solid #344047", borderRadius: 8 }} /><Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div></Card>;
 }
 
 export default function ReportsPage() {

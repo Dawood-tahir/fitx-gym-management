@@ -48,17 +48,36 @@ img, svg, canvas { max-width: 100%; }
   /* Mobile is intentionally dense: retain touch targets while reducing the
      desktop-card rhythm that caused long, repetitive vertical pages. */
   main .animate-fade-up > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
-  main article.rounded-xl { padding: .75rem; }
-  main article.rounded-xl dl { margin-top: .75rem; gap: .5rem; }
-  main article.rounded-xl > div:last-child { margin-top: .75rem; padding-top: .625rem; }
+  main article.rounded-xl { padding: .625rem; }
+  main article.rounded-xl dl { margin-top: .5rem; gap: .375rem; }
+  main article.rounded-xl > div:last-child { margin-top: .5rem; padding-top: .5rem; }
   main .rounded-panel > .p-3, main .rounded-panel > .p-4 { padding: .75rem; }
   main .rounded-panel > .grid { gap: .5rem; }
   main .rounded-panel > .grid > .relative:first-child { grid-column: span 2 / span 2; }
-  main [role="img"] { height: 10.5rem !important; }
-  main .h-64 { height: 11rem; }
+  main .rounded-panel > .grid:has(> [aria-label="Membership status"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+  }
+  /* Charts use their compact mobile footprint; desktop chart dimensions remain untouched. */
+  main [role="img"] { height: 9.75rem !important; }
+  main .h-64 { height: 10rem; }
+  main .rounded-panel > .grid.min-h-\[130px\] { min-height: 7.25rem; grid-template-columns: minmax(104px, .75fr) 1.2fr; }
+  main .rounded-panel .h-\[125px\] { height: 6.875rem; }
   main [class*="grid"] { min-width: 0; }
   main table { max-width: 100%; }
   main .overflow-x-auto { overscroll-behavior-inline: contain; }
+
+  /* Add/edit-member forms keep native 40px controls but lose desktop-sized rhythm. */
+  #member-form > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  #member-form section > h3 { margin-bottom: .75rem; }
+  #member-form .mb-5 { margin-bottom: .75rem; }
+  #member-form .gap-4 { gap: .75rem; }
+  #member-form .size-16 { width: 3rem; height: 3rem; }
+  #member-form .flex-wrap.rounded-xl { padding: .625rem; gap: .625rem; }
+  #member-form textarea { min-height: 5rem; }
+
+  /* Report period controls are compact without changing their range behavior. */
+  main .rounded-panel > .flex.flex-col.gap-3 { gap: .5rem; }
 }
 
 @layer utilities {
