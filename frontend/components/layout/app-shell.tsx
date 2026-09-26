@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setCollapsed(stored ? stored === "true" : window.innerWidth < 1280);
   }, []);
   useEffect(() => { if (ready && !user) router.replace(`/login?next=${encodeURIComponent(pathname)}`); }, [ready, user, router, pathname]);
-  useEffect(() => { if (ready && user?.role === "STAFF" && pathname.startsWith("/dashboard")) router.replace("/members"); }, [ready, user, pathname, router]);
+  useEffect(() => { if (ready && user?.role === "RECEPTIONIST" && pathname.startsWith("/dashboard")) router.replace("/members"); }, [ready, user, pathname, router]);
   useEffect(() => { setMobileOpen(false); }, [pathname]);
   useEffect(() => {
     if (!mobileOpen) return;

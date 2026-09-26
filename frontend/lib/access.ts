@@ -3,9 +3,9 @@ import type { UserRole } from "@/types/api";
 export type AccessRole = UserRole | "owner" | "admin" | "manager" | "receptionist";
 
 const restrictedRoutes: Array<{ prefix: string; roles: UserRole[] }> = [
-  { prefix: "/dashboard", roles: ["OWNER", "ADMIN"] },
-  { prefix: "/expenses", roles: ["OWNER", "ADMIN"] },
-  { prefix: "/reports", roles: ["OWNER", "ADMIN"] },
+  { prefix: "/dashboard", roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { prefix: "/expenses", roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { prefix: "/reports", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { prefix: "/staff", roles: ["OWNER"] },
   { prefix: "/settings", roles: ["OWNER"] },
 ];
@@ -13,11 +13,12 @@ const restrictedRoutes: Array<{ prefix: string; roles: UserRole[] }> = [
 export function normalizeRole(role: AccessRole): UserRole {
   if (role === "owner" || role === "OWNER") return "OWNER";
   if (role === "admin" || role === "ADMIN") return "ADMIN";
-  return "STAFF";
+  if (role === "manager" || role === "MANAGER") return "MANAGER";
+  return "RECEPTIONIST";
 }
 
 export function defaultRouteForRole(role: AccessRole) {
-  return normalizeRole(role) === "STAFF" ? "/members" : "/dashboard";
+  return normalizeRole(role) === "RECEPTIONIST" ? "/members" : "/dashboard";
 }
 
 export function canAccessRoute(pathname: string, role: AccessRole) {

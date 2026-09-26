@@ -7,7 +7,8 @@ import { ApiError, throwIfError, toApiError } from "./errors";
 function roleFor(profile: ProfileRow): UserRole {
   if (profile.role === "owner") return "OWNER";
   if (profile.role === "admin") return "ADMIN";
-  return "STAFF";
+  if (profile.role === "manager") return "MANAGER";
+  return "RECEPTIONIST";
 }
 
 async function appSession(session: Session | null): Promise<AuthSession | null> {

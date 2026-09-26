@@ -10,14 +10,14 @@ import { Logo } from "./logo";
 import type { UserRole } from "@/types/api";
 
 const items: Array<{ href: string; key: string; icon: typeof LayoutDashboard; roles: UserRole[] }> = [
-  { href: "/dashboard", key: "dashboard", icon: LayoutDashboard, roles: ["OWNER", "ADMIN"] },
-  { href: "/members", key: "members", icon: Users, roles: ["OWNER", "ADMIN", "STAFF"] },
-  { href: "/payments", key: "payments", icon: CreditCard, roles: ["OWNER", "ADMIN", "STAFF"] },
-  { href: "/expenses", key: "expenses", icon: ReceiptText, roles: ["OWNER", "ADMIN"] },
-  { href: "/plans", key: "plans", icon: Tags, roles: ["OWNER", "ADMIN", "STAFF"] },
-  { href: "/equipment", key: "equipment", icon: Wrench, roles: ["OWNER", "ADMIN", "STAFF"] },
-  { href: "/complaints", key: "complaints", icon: MessageSquareText, roles: ["OWNER", "ADMIN", "STAFF"] },
-  { href: "/reports", key: "reports", icon: BarChart3, roles: ["OWNER", "ADMIN"] },
+  { href: "/dashboard", key: "dashboard", icon: LayoutDashboard, roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { href: "/members", key: "members", icon: Users, roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
+  { href: "/payments", key: "payments", icon: CreditCard, roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
+  { href: "/expenses", key: "expenses", icon: ReceiptText, roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { href: "/plans", key: "plans", icon: Tags, roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
+  { href: "/equipment", key: "equipment", icon: Wrench, roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
+  { href: "/complaints", key: "complaints", icon: MessageSquareText, roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
+  { href: "/reports", key: "reports", icon: BarChart3, roles: ["OWNER", "ADMIN", "MANAGER"] },
   { href: "/staff", key: "staff", icon: ShieldCheck, roles: ["OWNER"] },
 ];
 

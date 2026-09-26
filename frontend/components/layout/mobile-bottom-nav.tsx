@@ -17,7 +17,7 @@ export function MobileBottomNav({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
   const { t, locale } = useLocale();
   const { user } = useAuth();
-  const visibleItems = user?.role === "STAFF" ? items.filter((item) => item.href !== "/dashboard") : items;
+  const visibleItems = user?.role === "RECEPTIONIST" ? items.filter((item) => item.href !== "/dashboard") : items;
   const moreActive = !visibleItems.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   return <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#071014]/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(0,0,0,.3)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
     <div className="mx-auto grid h-16 max-w-lg" style={{ gridTemplateColumns: `repeat(${visibleItems.length + 1}, minmax(0, 1fr))` }}>

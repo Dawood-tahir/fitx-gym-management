@@ -89,6 +89,7 @@ export const dashboardService = {
     throwIfError(error, "Dashboard data could not be loaded.");
     const root = jsonRecord(data as Json);
     const metrics = jsonRecord(first(root, "metrics", "kpis") as Json);
+    const cycle = jsonRecord(first(root, "business_cycle") as Json);
     const source = Object.keys(metrics).length ? metrics : root;
     const trend: TrendPoint[] = jsonArray(first(root, "trend", "monthly_trend")).map((entry) => {
       const row = jsonRecord(entry);
@@ -107,10 +108,13 @@ export const dashboardService = {
       activeMembersChange: numeric(source, "active_members_change"),
       expiringSoon: numeric(source, "expiring_soon"),
       expiringSoonChange: numeric(source, "expiring_soon_change"),
+      expiredMembers: numeric(source, "expired_members"),
+      paymentDueMembers: numeric(source, "payment_due_members"),
       unpaidFees: numeric(source, "unpaid_fees", "outstanding_members"),
       unpaidFeesChange: numeric(source, "unpaidpaid_fees_change", "unpaid_fees_change"),
       monthlyRevenue: numeric(source, "monthly_revenue", "revenue_this_month"),
       revenueToday: numeric(source, "revenue_today"),
+      businessCycleLabel: textValue(cycle, "label"),
       revenueChange: numeric(source, "revenue_change"),
       monthlyExpenses: numeric(source, "monthly_expenses", "expenses_this_month"),
       expensesChange: numeric(source, "expenses_change"),

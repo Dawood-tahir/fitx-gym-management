@@ -3,6 +3,7 @@ import type {
   Member,
   MemberInput,
   MembershipHistoryItem,
+  MemberTimelineEvent,
   MembershipStatus,
   PagedResult,
   Payment,
@@ -26,6 +27,7 @@ function membershipStatus(value: string): MembershipStatus {
   const statuses: Record<string, MembershipStatus> = {
     active: "Active",
     expiring_soon: "Expiring Soon",
+    payment_due: "Payment Due",
     expired: "Expired",
     inactive: "Inactive",
     suspended: "Suspended",
@@ -114,14 +116,17 @@ async function enrichMember(member: Member) {
     paymentsResult,
     methodsResult,
     profilesResult,
+    timelineResult,
   ] = await Promise.all([
     supabase.from("member_subscriptions").select("*").eq("member_id", member.id).order("start_date", { ascending: false }),
     supabase.from("payments").select("*").eq("member_id", member.id).order("payment_date", { ascending: false }),
     supabase.from("payment_methods").select("*"),
     supabase.from("profiles").select("*"),
+    supabase.rpc("member_timeline", { p_member_id: member.id }),
   ]);
   throwIfError(subscriptionsResult.error, "Membership history could not be loaded.");
   throwIfError(paymentsResult.error, "Payment history could not be loaded.");
+  throwIfError(timelineResult.error, "Member history could not be loaded.");
 
   const subscriptions = subscriptionsResult.data ?? [];
   const planIds = [...new Set(subscriptions.map((item) => item.plan_id))];
@@ -189,6 +194,15 @@ async function enrichMember(member: Member) {
     membershipHistory: history,
     paymentHistory,
     renewalHistory,
+    timeline: (timelineResult.data ?? []).map((event): MemberTimelineEvent => ({
+      eventAt: event.event_at,
+      eventType: event.event_type,
+      title: event.title,
+      detail: event.detail ?? undefined,
+      amount: event.amount === null ? undefined : numberValue(event.amount),
+      subscriptionId: event.subscription_id ?? undefined,
+      paymentId: event.payment_id ?? undefined,
+    })),
   };
 }
 
@@ -207,7 +221,7 @@ export const membersService = {
     if (params.planId) query = query.eq("plan_id", String(params.planId));
     if (params.membershipStatus) {
       const value = String(params.membershipStatus).replace(/\s/g, "").toLowerCase();
-      const map: Record<string, string> = { expiringssoon: "expiring_soon", expiringsoon: "expiring_soon" };
+      const map: Record<string, string> = { expiringssoon: "expiring_soon", expiringsoon: "expiring_soon", paymentdue: "payment_due" };
       query = query.eq("membership_status", map[value] ?? value);
     }
     if (params.paymentStatus) query = query.eq("payment_status", String(params.paymentStatus).toLowerCase());
@@ -260,7 +274,7 @@ export const membersService = {
     }
   },
 
-  async update(id: string, input: Partial<MemberInput>) {
+  async update(id: string, input: Partial<MemberInput> & { removeProfilePhoto?: boolean }) {
     const supabase = createClient();
     const { data: existing, error: existingError } = await supabase
       .from("members")
@@ -270,7 +284,7 @@ export const membersService = {
     throwIfError(existingError, "The member could not be loaded.");
     if (!existing) throw new ApiError("Member not found.", 404);
 
-    let nextPhotoPath = existing.profile_photo_path;
+    let nextPhotoPath = input.removeProfilePhoto ? null : existing.profile_photo_path;
     if (input.profilePhoto) nextPhotoPath = await uploadImage("member-photos", input.profilePhoto, "members");
     const { error } = await supabase.from("members").update({
       ...(input.fullName !== undefined && { full_name: input.fullName.trim() }),
@@ -291,7 +305,7 @@ export const membersService = {
       }
       throwIfError(error, "The member could not be updated.");
     }
-    if (nextPhotoPath && existing.profile_photo_path && nextPhotoPath !== existing.profile_photo_path) {
+    if (existing.profile_photo_path && nextPhotoPath !== existing.profile_photo_path) {
       await removeImage("member-photos", existing.profile_photo_path).catch(() => undefined);
     }
     return membersService.get(id);

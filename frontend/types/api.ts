@@ -1,4 +1,4 @@
-export type UserRole = "OWNER" | "ADMIN" | "STAFF";
+export type UserRole = "OWNER" | "ADMIN" | "MANAGER" | "RECEPTIONIST";
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -30,7 +30,7 @@ export interface PagedResult<T> {
   totalPages: number;
 }
 
-export type MembershipStatus = "Active" | "Expiring Soon" | "Expired" | "Inactive" | "Suspended" | "Cancelled" | "Pending";
+export type MembershipStatus = "Active" | "Expiring Soon" | "Payment Due" | "Expired" | "Inactive" | "Suspended" | "Cancelled" | "Pending";
 export type PaymentStatus = "Paid" | "Partial" | "Unpaid" | "Voided";
 
 export interface MembershipPlan {
@@ -75,6 +75,16 @@ export interface RenewalHistoryItem {
   amountPaid: number;
 }
 
+export interface MemberTimelineEvent {
+  eventAt: string;
+  eventType: string;
+  title: string;
+  detail?: string;
+  amount?: number;
+  subscriptionId?: string;
+  paymentId?: string;
+}
+
 export interface Member {
   id: string;
   memberId: string;
@@ -108,6 +118,7 @@ export interface Member {
   membershipHistory?: MembershipHistoryItem[];
   paymentHistory?: Payment[];
   renewalHistory?: RenewalHistoryItem[];
+  timeline?: MemberTimelineEvent[];
 }
 
 export interface MemberInput {
@@ -340,10 +351,13 @@ export interface DashboardData {
   activeMembersChange: number;
   expiringSoon: number;
   expiringSoonChange: number;
+  expiredMembers?: number;
+  paymentDueMembers?: number;
   unpaidFees: number;
   unpaidFeesChange: number;
   monthlyRevenue: number;
   revenueToday?: number;
+  businessCycleLabel?: string;
   revenueChange: number;
   monthlyExpenses: number;
   expensesChange: number;
