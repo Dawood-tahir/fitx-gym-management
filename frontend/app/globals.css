@@ -44,6 +44,21 @@ img, svg, canvas { max-width: 100%; }
   [role="dialog"] { max-width: 100vw; }
   header.sticky > label { display: none; }
   header.sticky > div.relative > button { min-width: 44px; min-height: 44px; }
+
+  /* Mobile is intentionally dense: retain touch targets while reducing the
+     desktop-card rhythm that caused long, repetitive vertical pages. */
+  main .animate-fade-up > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  main article.rounded-xl { padding: .75rem; }
+  main article.rounded-xl dl { margin-top: .75rem; gap: .5rem; }
+  main article.rounded-xl > div:last-child { margin-top: .75rem; padding-top: .625rem; }
+  main .rounded-panel > .p-3, main .rounded-panel > .p-4 { padding: .75rem; }
+  main .rounded-panel > .grid { gap: .5rem; }
+  main .rounded-panel > .grid > .relative:first-child { grid-column: span 2 / span 2; }
+  main [role="img"] { height: 10.5rem !important; }
+  main .h-64 { height: 11rem; }
+  main [class*="grid"] { min-width: 0; }
+  main table { max-width: 100%; }
+  main .overflow-x-auto { overscroll-behavior-inline: contain; }
 }
 
 @layer utilities {
