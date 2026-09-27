@@ -345,7 +345,7 @@ function PaymentSummaryCards({ summary, loading, error, locale, onRetry }: {
   onRetry: () => void;
 }) {
   if (loading && !summary) {
-    return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-panel bg-white/[.045]" />)}</div>;
+    return <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-panel bg-white/[.045]" />)}</div>;
   }
   if (error && !summary) {
     return (
@@ -357,7 +357,7 @@ function PaymentSummaryCards({ summary, loading, error, locale, onRetry }: {
   }
   if (!summary) return null;
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
       <SummaryCard icon={<CircleDollarSign />} label="Payments this period (10th–9th)" value={formatCurrency(summary.paymentsThisMonth, locale)} tone="green" />
       <SummaryCard icon={<Banknote />} label="Outstanding amount" value={formatCurrency(summary.outstandingAmount, locale)} tone="warning" />
       <SummaryCard icon={<Users />} label="Paid members" value={String(summary.paidMembers)} tone="blue" />
@@ -374,11 +374,11 @@ function SummaryCard({ icon, label, value, tone }: { icon: ReactNode; label: str
     danger: "bg-danger/10 text-danger",
   };
   return (
-    <Card className="flex min-h-24 items-center gap-3 p-4">
-      <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${classes[tone]} [&>svg]:size-5`}>{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[10px] text-muted">{label}</p>
-        <p className="mt-1 truncate text-lg font-extrabold text-foreground">{value}</p>
+    <Card className="flex min-h-24 flex-col items-start gap-1.5 p-2.5 sm:flex-row sm:items-center sm:gap-3 sm:p-4">
+      <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-11 sm:rounded-xl ${classes[tone]} [&>svg]:size-4 sm:[&>svg]:size-5`}>{icon}</span>
+      <div className="min-w-0 w-full sm:w-auto">
+        <p className="line-clamp-2 text-[10px] leading-tight text-muted sm:line-clamp-none sm:leading-4">{label}</p>
+        <p className="mt-1 truncate text-base font-extrabold leading-tight text-foreground sm:text-lg sm:leading-7">{value}</p>
       </div>
     </Card>
   );

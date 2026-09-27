@@ -68,6 +68,12 @@ img, svg, canvas { max-width: 100%; }
   }
   /* Charts use their compact mobile footprint; desktop chart dimensions remain untouched. */
   main [role="img"] { height: 9.75rem !important; }
+  main .dashboard-chart { height: 11rem !important; }
+  main .dashboard-donut-layout { min-height: 7.5rem; grid-template-columns: minmax(112px, .8fr) 1.2fr; }
+  main .dashboard-donut-chart { height: 7.25rem; }
+  main .dashboard-revenue-expenses .recharts-legend-wrapper { line-height: 1; }
+  main .dashboard-new-members .recharts-tooltip-wrapper { max-width: calc(100vw - 3rem); }
+  main .dashboard-new-members .recharts-default-tooltip { padding: .375rem .5rem !important; }
   main .h-64 { height: 10rem; }
   main .rounded-panel > .grid.min-h-\[130px\] { min-height: 7.25rem; grid-template-columns: minmax(104px, .75fr) 1.2fr; }
   main .rounded-panel .h-\[125px\] { height: 6.875rem; }
