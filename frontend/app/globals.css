@@ -9,7 +9,7 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; max-width: 100%; overflow-x: hidden; background: var(--fitx-bg); scroll-behavior: smooth; }
+html { min-width: 320px; max-width: 100%; overflow-x: clip; background: var(--fitx-bg); scroll-behavior: smooth; }
 body {
   min-height: 100dvh;
   margin: 0;
@@ -20,8 +20,12 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
+
+/* Grid and flex children otherwise retain their intrinsic width, which is the
+   most common cause of a page moving sideways on a phone. */
+#\__next, body > div { min-width: 0; max-width: 100%; }
 
 html[lang="ur"] body {
   font-family: "Noto Sans Arabic", "Noto Nastaliq Urdu", Tahoma, Arial, sans-serif;
@@ -47,7 +51,11 @@ img, svg, canvas { max-width: 100%; }
 
   /* Mobile is intentionally dense: retain touch targets while reducing the
      desktop-card rhythm that caused long, repetitive vertical pages. */
+  main { min-width: 0; overflow-x: clip; }
+  main > *, main [class*="grid"] > *, main [class*="flex"] > * { min-width: 0; }
   main .animate-fade-up > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  main h1, main h2, main h3, main p, main dd { overflow-wrap: anywhere; }
+  main button, main a[role="button"] { min-height: 2.5rem; }
   main article.rounded-xl { padding: .625rem; }
   main article.rounded-xl dl { margin-top: .5rem; gap: .375rem; }
   main article.rounded-xl > div:last-child { margin-top: .5rem; padding-top: .5rem; }
@@ -66,6 +74,11 @@ img, svg, canvas { max-width: 100%; }
   main [class*="grid"] { min-width: 0; }
   main table { max-width: 100%; }
   main .overflow-x-auto { overscroll-behavior-inline: contain; }
+
+  /* Forms and their action rows are easier to scan and operate with one hand. */
+  form [class*="grid"] { gap: .875rem; }
+  form label { min-width: 0; }
+  [role="dialog"] footer > button { flex: 1 1 0; }
 
   /* Add/edit-member forms keep native 40px controls but lose desktop-sized rhythm. */
   #member-form > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
