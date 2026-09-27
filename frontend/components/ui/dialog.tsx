@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
-export function Dialog({ open, onClose, title, description, children, footer, size = "md" }: { open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode; footer?: ReactNode; size?: "sm" | "md" | "lg" | "xl" }) {
+export function Dialog({ open, onClose, title, description, children, footer, size = "md", mobileCompact = false }: { open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode; footer?: ReactNode; size?: "sm" | "md" | "lg" | "xl"; mobileCompact?: boolean }) {
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -17,10 +17,10 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="dialog-title" className={cn("max-h-[94dvh] w-full overflow-hidden rounded-t-2xl border border-white/10 bg-elevated shadow-2xl sm:max-h-[92dvh] sm:rounded-2xl", size === "sm" && "sm:max-w-md", size === "md" && "sm:max-w-xl", size === "lg" && "sm:max-w-3xl", size === "xl" && "sm:max-w-5xl")}>
+      <section role="dialog" aria-modal="true" aria-labelledby="dialog-title" className={cn("flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-elevated shadow-2xl sm:max-h-[92dvh] sm:rounded-2xl", mobileCompact && "max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-.5rem)]", size === "sm" && "sm:max-w-md", size === "md" && "sm:max-w-xl", size === "lg" && "sm:max-w-3xl", size === "xl" && "sm:max-w-5xl")}>
         <header className="flex items-start justify-between gap-3 border-b border-white/[.08] px-4 py-3 sm:gap-4 sm:px-5 sm:py-4"><div><h2 id="dialog-title" className="text-sm font-bold text-foreground sm:text-base">{title}</h2>{description && <p className="mt-1 text-xs leading-relaxed text-secondary">{description}</p>}</div><button onClick={onClose} className="rounded-lg p-2 text-muted transition hover:bg-white/5 hover:text-foreground" aria-label="Close"><X className="size-5" /></button></header>
-        <div className="max-h-[calc(94dvh-118px)] overflow-y-auto px-4 py-4 sm:max-h-[calc(92dvh-130px)] sm:px-5 sm:py-5">{children}</div>
-        {footer && <footer className="flex flex-wrap justify-end gap-2 border-t border-white/[.08] bg-background/30 px-4 py-3 sm:px-5 sm:py-4">{footer}</footer>}
+        <div className={cn("max-h-[calc(94dvh-118px)] overflow-y-auto px-4 py-4 sm:max-h-[calc(92dvh-130px)] sm:px-5 sm:py-5", mobileCompact && "min-h-0 flex-1 max-h-none py-3")}>{children}</div>
+        {footer && <footer className={cn("flex shrink-0 flex-wrap justify-end gap-2 border-t border-white/[.08] bg-background/30 px-4 py-3 sm:px-5 sm:py-4", mobileCompact && "pb-[calc(.75rem+env(safe-area-inset-bottom))]")}>{footer}</footer>}
       </section>
     </div>, document.body,
   );

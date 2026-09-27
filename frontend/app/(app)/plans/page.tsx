@@ -116,7 +116,7 @@ export default function PlansPage() {
       {loading && !plans ? (
         <div className="grid gap-3 md:grid-cols-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-panel bg-white/[.045]" />)}</div>
       ) : plans ? (
-        <section className="grid gap-3 md:grid-cols-3">
+        <section className="mobile-stats grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
           <SummaryCard icon={<Tag />} label="Available plans" value={String(activePlans.length)} tone="green" />
           <SummaryCard icon={<CircleDollarSign />} label="Starting price" value={formatCurrency(startingPrice, locale)} tone="blue" />
           <SummaryCard icon={<CalendarRange />} label="Average duration" value={`${averageDuration} ${averageDuration === 1 ? "month" : "months"}`} tone="purple" />
@@ -124,8 +124,8 @@ export default function PlansPage() {
       ) : null}
 
       <Card className="p-3 sm:p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_200px_auto]">
-          <div className="relative">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-[minmax(240px,1fr)_200px_auto] md:gap-3">
+          <div className="relative col-span-2 md:col-span-1">
             <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search plans" className="ps-10" />
           </div>

@@ -127,8 +127,8 @@ export default function ExpensesPage() {
       />
 
       <Card className="p-3 sm:p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_160px_160px_auto]">
-          <div className="relative">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-3 xl:grid-cols-[minmax(240px,1fr)_190px_160px_160px_auto]">
+          <div className="relative col-span-2 xl:col-span-1">
             <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <Input
               value={query}
@@ -303,7 +303,7 @@ function ExpenseSummaryCards({ summary, loading, error, locale, onRetry }: {
   onRetry: () => void;
 }) {
   if (loading && !summary) {
-    return <div className="grid gap-3 md:grid-cols-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-panel bg-white/[.045]" />)}</div>;
+    return <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-panel bg-white/[.045] md:h-24" />)}</div>;
   }
   if (error && !summary) {
     return (
@@ -316,11 +316,11 @@ function ExpenseSummaryCards({ summary, loading, error, locale, onRetry }: {
   if (!summary) return null;
   const increased = summary.changePercentFromLastMonth >= 0;
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="mobile-stats grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
       <SummaryCard icon={<ReceiptText />} label="Expenses this period (10th–9th)" value={formatCurrency(summary.totalThisMonth, locale)} tone="purple" />
       <SummaryCard icon={<Tags />} label="Largest category" value={summary.largestCategory || "No expenses yet"} tone="blue" />
-      <Card className="flex min-h-24 items-center gap-3 p-4">
-        <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${increased ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+      <Card className="col-span-2 flex min-h-0 items-center gap-2 p-3 md:col-span-1 md:min-h-24 md:gap-3 md:p-4">
+        <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl md:size-11 ${increased ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
           {increased ? <ArrowUpRight className="size-5" /> : <ArrowDownRight className="size-5" />}
         </span>
         <div>
