@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import { timestampBounds } from "@/lib/business-period";
 import type { ExpenseRow, Json, MemberOverviewRow, MembershipPlanRow, PaymentMethodRow, PaymentRow, SubscriptionRow } from "@/types/database";
 import { jsonRecord, numberValue } from "./shared";
 import { throwIfError } from "./errors";
@@ -21,9 +20,8 @@ const labelFor = (value: string) => new Intl.DateTimeFormat("en", { day: "numeri
 export const reportsService = {
   async get(range: ReportRange): Promise<ReportsData> {
     const supabase = createClient();
-    const paymentBounds = timestampBounds(range);
     const [paymentsResult, expensesResult, membersResult, subscriptionsResult, overviewResult, plansResult, methodsResult, categoriesResult, summaryResult] = await Promise.all([
-      supabase.from("payments").select("*").gte("payment_date", paymentBounds.from).lt("payment_date", paymentBounds.toExclusive).order("payment_date", { ascending: false }),
+      supabase.from("payments").select("*").gte("reporting_date", range.from).lte("reporting_date", range.to).order("reporting_date", { ascending: false }),
       supabase.from("expenses").select("*").eq("is_deleted", false).gte("expense_date", range.from).lte("expense_date", range.to).order("expense_date", { ascending: false }),
       supabase.from("members").select("id,member_code,full_name,join_date", { count: "exact" }).gte("join_date", range.from).lte("join_date", range.to).order("join_date", { ascending: false }),
       supabase.from("member_subscriptions").select("*").eq("is_current", true).neq("status", "cancelled"),
@@ -62,7 +60,7 @@ export const reportsService = {
       if (!points.has(key)) points.set(key, { label: labelFor(key), revenue: 0, expenses: 0 });
       return points.get(key)!;
     };
-    revenuePayments.forEach((item) => { point(item.payment_date).revenue += numberValue(item.amount); });
+    revenuePayments.forEach((item) => { point(item.reporting_date).revenue += numberValue(item.amount); });
     expenses.forEach((item) => { point(item.expense_date).expenses += numberValue(item.amount); });
     const categories = new Map<string, number>();
     expenses.forEach((item) => categories.set(item.category_id, (categories.get(item.category_id) ?? 0) + numberValue(item.amount)));
@@ -70,7 +68,7 @@ export const reportsService = {
     const expiringMembers = overview.filter((item) => item.membership_status === "expiring_soon" && item.end_date && item.end_date <= range.to).sort((a, b) => (a.end_date ?? "").localeCompare(b.end_date ?? "")).slice(0, 8).map((item) => ({ id: item.id, member: memberNames.get(item.id) ?? "Unknown member", plan: item.plan_name ?? planNames.get(item.plan_id ?? "") ?? "Unknown plan", expiry: item.end_date ?? "" }));
     const planCounts = new Map<string, number>();
     currentSubscriptions.forEach((item) => planCounts.set(item.plan_id, (planCounts.get(item.plan_id) ?? 0) + 1));
-    const reportPayments = revenuePayments.map((item) => ({ id: item.id, date: item.payment_date, member: memberNames.get(item.member_id) ?? "Unknown member", plan: item.subscription_id ? planNames.get(subscriptionPlans.get(item.subscription_id) ?? "") : undefined, method: methodNames.get(item.payment_method_id) ?? "—", amount: numberValue(item.amount) }));
+    const reportPayments = revenuePayments.map((item) => ({ id: item.id, date: item.reporting_date, member: memberNames.get(item.member_id) ?? "Unknown member", plan: item.subscription_id ? planNames.get(subscriptionPlans.get(item.subscription_id) ?? "") : undefined, method: methodNames.get(item.payment_method_id) ?? "—", amount: numberValue(item.amount) }));
     const reportExpenses = expenses.map((item) => ({ id: item.id, date: item.expense_date, category: categoryNames.get(item.category_id) ?? "—", description: item.title || item.description || "Expense", amount: numberValue(item.amount) }));
     const newMemberRows = (membersResult.data ?? []).map((item) => ({ id: item.id, memberCode: item.member_code, name: item.full_name, joinDate: item.join_date }));
     return {

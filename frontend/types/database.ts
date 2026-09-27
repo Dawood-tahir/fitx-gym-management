@@ -88,6 +88,7 @@ export interface PaymentRow {
   amount: number;
   payment_method_id: string;
   payment_date: string;
+  reporting_date: string;
   payment_type: "membership" | "renewal" | "registration" | "other";
   reference_number: string | null;
   notes: string | null;
