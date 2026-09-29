@@ -8,6 +8,7 @@ function roleFor(profile: ProfileRow): UserRole {
   if (profile.role === "owner") return "OWNER";
   if (profile.role === "admin") return "ADMIN";
   if (profile.role === "manager") return "MANAGER";
+  if (profile.role === "ladies_receptionist") return "LADIES_RECEPTIONIST";
   return "RECEPTIONIST";
 }
 

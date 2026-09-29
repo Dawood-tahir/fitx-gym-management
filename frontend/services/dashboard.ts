@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { DashboardData, DistributionPoint, Expense, Member, Payment, TrendPoint } from "@/types/api";
+import type { DashboardData, DistributionPoint, Expense, GymSection, Member, Payment, TrendPoint } from "@/types/api";
 import type { Json, MemberOverviewRow } from "@/types/database";
 import { throwIfError } from "./errors";
 import { toMember } from "./members";
@@ -18,6 +18,10 @@ function numeric(record: Record<string, Json | undefined>, ...keys: string[]) {
 function textValue(record: Record<string, Json | undefined>, ...keys: string[]) {
   const value = first(record, ...keys);
   return typeof value === "string" ? value : "";
+}
+
+function booleanValue(record: Record<string, Json | undefined>, key: string) {
+  return record[key] === true;
 }
 
 function distribution(value: Json | undefined): DistributionPoint[] {
@@ -83,9 +87,9 @@ function recentExpense(value: Json): Expense {
 }
 
 export const dashboardService = {
-  async get(range = "6months"): Promise<DashboardData> {
+  async get(range = "6months", section: GymSection = "all"): Promise<DashboardData> {
     const months = range === "6months" ? 6 : 12;
-    const { data, error } = await createClient().rpc("dashboard_summary", { p_months: months });
+    const { data, error } = await createClient().rpc("dashboard_summary", { p_months: months, p_section: section });
     throwIfError(error, "Dashboard data could not be loaded.");
     const root = jsonRecord(data as Json);
     const metrics = jsonRecord(first(root, "metrics", "kpis") as Json);
@@ -97,13 +101,16 @@ export const dashboardService = {
         label: textValue(row, "label", "month"),
         revenue: numeric(row, "revenue"),
         expenses: numeric(row, "expenses"),
-        profit: numeric(row, "profit", "net_income"),
+        profit: first(row, "profit", "net_income") === null ? null : numeric(row, "profit", "net_income"),
         newMembers: numeric(row, "new_members", "newMembers"),
       };
     });
 
     return {
+      section: (textValue(root, "section") || section) as GymSection,
+      profitAvailable: booleanValue(root, "profit_available"),
       totalMembers: numeric(source, "total_members"),
+      unclassifiedMembers: numeric(source, "unclassified_members"),
       activeMembers: numeric(source, "active_members"),
       activeMembersChange: numeric(source, "active_members_change"),
       expiringSoon: numeric(source, "expiring_soon"),
@@ -121,11 +128,10 @@ export const dashboardService = {
       netProfit: numeric(source, "net_profit", "net_income"),
       profitChange: numeric(source, "profit_change"),
       pendingComplaints: numeric(source, "pending_complaints"),
-      equipmentMaintenance: numeric(source, "equipment_maintenance"),
+      newMembers: numeric(source, "new_members"),
       trend,
       membershipStatus: distribution(first(root, "membership_status")),
       paymentStatus: distribution(first(root, "payment_status")),
-      planDistribution: distribution(first(root, "plan_distribution", "membership_plans")),
       recentMembers: jsonArray(first(root, "recent_members")).map(recentMember),
       recentPayments: jsonArray(first(root, "recent_payments")).map(recentPayment),
       recentExpenses: jsonArray(first(root, "recent_expenses")).map(recentExpense),
@@ -135,7 +141,7 @@ export const dashboardService = {
   subscribe(onChange: () => void) {
     const client = createClient();
     const channel = client.channel("fitx-dashboard");
-    ["members", "member_subscriptions", "payments", "expenses", "complaints_feedback", "equipment"].forEach((table) => {
+    ["members", "member_subscriptions", "payments", "expenses", "complaints_feedback"].forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
     });
     channel.subscribe();

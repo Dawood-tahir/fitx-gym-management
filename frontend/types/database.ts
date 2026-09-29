@@ -11,7 +11,7 @@ export interface ProfileRow {
   id: string;
   full_name: string;
   email: string;
-  role: "owner" | "admin" | "manager" | "receptionist";
+  role: "owner" | "admin" | "manager" | "receptionist" | "ladies_receptionist";
   phone: string | null;
   avatar_path: string | null;
   is_active: boolean;
@@ -28,6 +28,7 @@ export interface MemberRow {
   email: string | null;
   national_id: string | null;
   gender: string | null;
+  section: "gents" | "ladies" | null;
   date_of_birth: string | null;
   address: string | null;
   emergency_contact_name: string | null;
@@ -286,6 +287,7 @@ export interface Database {
           p_email?: string | null;
           p_national_id?: string | null;
           p_gender?: string | null;
+          p_section?: "gents" | "ladies" | null;
           p_date_of_birth?: string | null;
           p_address?: string | null;
           p_emergency_contact_name?: string | null;
@@ -337,7 +339,7 @@ export interface Database {
         Args: { p_complaint_id: string; p_response: string };
         Returns: undefined;
       };
-      dashboard_summary: { Args: { p_months?: number }; Returns: Json };
+      dashboard_summary: { Args: { p_months?: number; p_section?: "all" | "gents" | "ladies" }; Returns: Json };
       member_timeline: { Args: { p_member_id: string }; Returns: Array<{ event_at: string; event_type: string; title: string; detail: string | null; amount: number | null; subscription_id: string | null; payment_id: string | null; }> };
       report_summary: { Args: { p_from: string; p_to: string }; Returns: Json };
       current_user_role: { Args: Record<string, never>; Returns: string | null };

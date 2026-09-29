@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Plus, Search, UserX, Users } from "lucide-react";
 import { api } from "@/services";
 import { formatCurrency, formatDate, getErrorMessage, initials } from "@/lib/utils";
+import { roleLabel } from "@/lib/access";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useLocale } from "@/components/locale-provider";
 import { useToast } from "@/components/toast-provider";
@@ -19,7 +20,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import type { Staff } from "@/types/api";
 
 export default function StaffPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -140,6 +141,7 @@ export default function StaffPage() {
                       <th className="rounded-s-lg px-3 py-3 font-semibold">Staff member</th>
                       <th className="px-3 py-3 font-semibold">Contact</th>
                       <th className="px-3 py-3 font-semibold">Position</th>
+                      <th className="px-3 py-3 font-semibold">Access role</th>
                       <th className="px-3 py-3 font-semibold">Hire date</th>
                       <th className="px-3 py-3 font-semibold">Salary</th>
                       <th className="px-3 py-3 font-semibold">Status</th>
@@ -157,6 +159,7 @@ export default function StaffPage() {
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary" dir="ltr">{staff.phone}</td>
                         <td className="px-3 py-3 font-medium">{staff.position}</td>
+                        <td className="px-3 py-3 text-secondary">{staff.accessRole ? (staff.accessRole === "LADIES_RECEPTIONIST" ? t("staff.ladiesReceptionist") : roleLabel(staff.accessRole)) : "No account"}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary">{formatDate(staff.hireDate, locale)}</td>
                         <td className="whitespace-nowrap px-3 py-3 font-medium">{staff.salary === undefined ? "—" : formatCurrency(staff.salary, locale)}</td>
                         <td className="px-3 py-3"><StatusBadge status={staff.status} /></td>
@@ -183,6 +186,7 @@ export default function StaffPage() {
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
                       <div><dt className="text-[10px] text-muted">Phone</dt><dd className="mt-0.5 text-secondary" dir="ltr">{staff.phone}</dd></div>
                       <div><dt className="text-[10px] text-muted">Hire date</dt><dd className="mt-0.5 text-secondary">{formatDate(staff.hireDate, locale)}</dd></div>
+                      <div><dt className="text-[10px] text-muted">Access role</dt><dd className="mt-0.5 text-secondary">{staff.accessRole ? (staff.accessRole === "LADIES_RECEPTIONIST" ? t("staff.ladiesReceptionist") : roleLabel(staff.accessRole)) : "No account"}</dd></div>
                       <div className="col-span-2"><dt className="text-[10px] text-muted">Email</dt><dd className="mt-0.5 truncate text-secondary">{staff.email || "No email"}</dd></div>
                     </dl>
                     <div className="mt-4 flex gap-2 border-t border-white/[.055] pt-3">

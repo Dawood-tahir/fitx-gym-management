@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, BarChart3, Clock3, CreditCard,
-  ReceiptText, TrendingUp, UserPlus, Users,
+  MessageSquareText, TrendingUp, UserPlus, Users,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart,
@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/form-controls";
 import { ErrorState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { DashboardData, DistributionPoint } from "@/types/api";
+import type { DashboardData, DistributionPoint, GymSection } from "@/types/api";
 
 const colors = ["#32E875", "#38A9FF", "#9565F6", "#F5B942", "#FF5252", "#93A1AA"];
 
@@ -47,32 +47,49 @@ function DashboardSkeleton() {
   return <div className="space-y-3"><div className="h-28 animate-pulse rounded-panel bg-white/[.045]" /><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-32 animate-pulse rounded-panel bg-white/[.045]" />)}</div><div className="grid gap-3 xl:grid-cols-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-60 animate-pulse rounded-panel bg-white/[.045]" />)}</div></div>;
 }
 
+function SectionSelector({ value, onChange }: { value: GymSection; onChange: (section: GymSection) => void }) {
+  const { t } = useLocale();
+  const items: Array<{ value: GymSection; mobile: string; desktop: string; selected: string }> = [
+    { value: "all", mobile: t("dashboard.wholeGym"), desktop: t("dashboard.wholeGym"), selected: "border-primary bg-primary/15 text-primary shadow-[0_0_20px_rgba(50,232,117,.12)]" },
+    { value: "gents", mobile: t("dashboard.gents"), desktop: t("dashboard.gentsSection"), selected: "border-info bg-info/15 text-info shadow-[0_0_20px_rgba(56,169,255,.12)]" },
+    { value: "ladies", mobile: t("dashboard.ladies"), desktop: t("dashboard.ladiesSection"), selected: "border-[#ff4fa3] bg-[#ff4fa3]/15 text-[#ff75b8] shadow-[0_0_20px_rgba(255,79,163,.12)]" },
+  ];
+  return <section className="grid grid-cols-3 gap-1.5 sm:gap-3" aria-label={t("dashboard.sectionFilter")}>
+    {items.map((item) => <button key={item.value} type="button" aria-pressed={value === item.value} onClick={() => onChange(item.value)} className={cn("min-w-0 rounded-xl border border-white/[.08] bg-card px-1.5 py-2.5 text-[11px] font-bold text-secondary transition hover:border-white/20 hover:text-white sm:px-4 sm:py-3 sm:text-sm", value === item.value && item.selected)}><span className="sm:hidden">{item.mobile}</span><span className="hidden sm:inline">{item.desktop}</span></button>)}
+  </section>;
+}
+
 export function DashboardPage() {
-  const { t, locale } = useLocale(); const { user } = useAuth(); const [range, setRange] = useState("6months");
-  const { data, error, loading, reload } = useApiQuery(() => api.dashboard(range), [range]);
+  const { t, locale } = useLocale(); const { user } = useAuth(); const [range, setRange] = useState("6months"); const [section, setSection] = useState<GymSection>("all");
+  const ownerSection = user?.role === "OWNER" ? section : "all";
+  const { data, error, loading, reload } = useApiQuery(() => api.dashboard(range, ownerSection), [range, ownerSection]);
   if (loading && !data) return <DashboardSkeleton />;
   if (error && !data) return <ErrorState title="Could not load dashboard" message={error.message} onRetry={reload} />;
   const dashboard = data as DashboardData;
+  const memberLabel = ownerSection === "gents" ? t("dashboard.gentsMembers") : ownerSection === "ladies" ? t("dashboard.ladiesMembers") : t("dashboard.totalMembers");
+  const activeLabel = ownerSection === "gents" ? t("dashboard.activeGents") : ownerSection === "ladies" ? t("dashboard.activeLadies") : t("dashboard.activeMembers");
   const filter = <Select value={range} onChange={(event) => setRange(event.target.value)} className="dashboard-chart-filter h-8 w-[104px] min-w-0 shrink-0 px-2 py-0 text-[10px] sm:w-auto sm:min-w-28 sm:px-3" aria-label="Chart period"><option value="6months">{t("dashboard.last6Months")}</option><option value="12m">{t("dashboard.last12Months")}</option><option value="year">{t("dashboard.thisYear")}</option></Select>;
   return <div className="space-y-3 animate-fade-up">
     <section className="relative min-h-[112px] overflow-hidden rounded-panel border border-white/[.07] bg-[url('/images/fitx-hero.png')] bg-cover bg-[center_38%] px-4 py-5 sm:px-6 sm:py-6"><div className="absolute inset-0 bg-gradient-to-r from-[#060b0e] via-[#071014]/82 to-[#071014]/30 rtl:bg-gradient-to-l" /><div className="absolute inset-0 bg-gradient-to-t from-[#071014]/80 to-transparent" /><div className="relative flex min-h-[64px] items-center justify-between gap-4"><div className="min-w-0"><h1 className="text-[23px] font-extrabold leading-tight tracking-tight sm:text-[29px]">{t("dashboard.greeting", { name: user?.name?.split(" ")[0] ?? "Owner" })}</h1><p className="mt-1.5 text-xs leading-relaxed text-white/75 sm:mt-2 sm:text-sm">{t("dashboard.subtitle")}</p></div><div className="hidden max-w-48 text-end lg:block"><p className="text-2xl font-black italic uppercase leading-[.95] text-white/80">Fitness<br /><span className="text-white">Beyond Limits</span></p><span className="mt-2 inline-block h-0.5 w-10 bg-primary" /></div></div></section>
+    {user?.role === "OWNER" && <SectionSelector value={section} onChange={setSection} />}
+    {ownerSection === "all" && (dashboard.unclassifiedMembers ?? 0) > 0 && <p className="rounded-xl border border-warning/20 bg-warning/[.06] px-3 py-2 text-[10px] text-warning">{t("dashboard.unclassifiedWarning", { count: dashboard.unclassifiedMembers ?? 0 })}</p>}
     <section className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
-      <StatCard icon={<Users />} value={dashboard.totalMembers ?? 0} label="Total members" change={0} detail="All non-archived profiles" tone="blue" />
-      <StatCard icon={<Users />} value={dashboard.activeMembers} label={t("dashboard.activeMembers")} change={dashboard.activeMembersChange} detail={t("dashboard.vsLastMonth")} />
+      <StatCard icon={<Users />} value={dashboard.totalMembers ?? 0} label={memberLabel} change={0} detail={t("dashboard.nonArchivedMembers")} tone="blue" />
+      <StatCard icon={<Users />} value={dashboard.activeMembers} label={activeLabel} change={dashboard.activeMembersChange} detail={t("dashboard.currentlyActive")} />
       <StatCard icon={<Clock3 />} value={dashboard.expiringSoon} label={t("dashboard.expiringSoon")} change={dashboard.expiringSoonChange} detail={t("dashboard.next30Days")} tone="amber" />
-      <StatCard icon={<AlertTriangle />} value={dashboard.expiredMembers ?? 0} label="Expired members" change={0} detail="Renewal follow-up needed" tone="red" />
-      <StatCard icon={<AlertTriangle />} value={dashboard.paymentDueMembers ?? dashboard.unpaidFees} label="Payment due" change={dashboard.unpaidFeesChange} detail="Valid term with balance due" tone="red" />
-      <StatCard icon={<Banknote />} value={dashboard.revenueToday ?? 0} label="Today's revenue" change={0} detail="Successful payments today" tone="blue" currency />
+      <StatCard icon={<AlertTriangle />} value={dashboard.paymentDueMembers ?? dashboard.unpaidFees} label={t("dashboard.paymentDue")} change={dashboard.unpaidFeesChange} detail={t("dashboard.balanceDue")} tone="red" />
+      <StatCard icon={<Banknote />} value={dashboard.revenueToday ?? 0} label={t("dashboard.todayRevenue")} change={0} detail={t("dashboard.successfulPaymentsToday")} tone="blue" currency />
       <StatCard icon={<Banknote />} value={dashboard.monthlyRevenue} label={t("dashboard.monthlyRevenue")} change={dashboard.revenueChange} detail={dashboard.businessCycleLabel ? `Cycle: ${dashboard.businessCycleLabel}` : "10th–9th business cycle"} tone="blue" currency />
-      <StatCard icon={<ReceiptText />} value={dashboard.monthlyExpenses} label={t("dashboard.expenses")} change={dashboard.expensesChange} detail={t("dashboard.vsLastMonth")} tone="purple" currency />
-      <StatCard icon={<TrendingUp />} value={dashboard.netProfit} label={t("dashboard.netProfit")} change={dashboard.profitChange} detail={t("dashboard.vsLastMonth")} currency />
+      <StatCard icon={<UserPlus />} value={dashboard.newMembers ?? 0} label={t("dashboard.newMembers")} change={0} detail={t("dashboard.thisBusinessCycle")} tone="purple" />
+      <StatCard icon={<MessageSquareText />} value={dashboard.pendingComplaints ?? 0} label={t("dashboard.complaints")} change={0} detail={t("dashboard.openComplaints")} tone="purple" />
     </section>
+    {ownerSection !== "all" && <p className="rounded-xl border border-info/15 bg-info/[.05] px-3 py-2 text-[10px] text-secondary">{t("dashboard.gymWideExpenseNote")}</p>}
     <section className="grid gap-2.5 sm:gap-3 xl:grid-cols-3">
       <ChartCard title={t("dashboard.monthlyRevenueChart")} icon={<BarChart3 />} actions={filter}><div className="dashboard-chart h-[176px] sm:h-[205px]" role="img" aria-label="Monthly revenue area chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dashboard.trend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}><defs><linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#32E875" stopOpacity={0.38} /><stop offset="100%" stopColor="#32E875" stopOpacity={0.015} /></linearGradient></defs><CartesianGrid stroke="#344047" strokeOpacity={0.32} strokeDasharray="2 2" vertical /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} axisLine={{ stroke: "#344047" }} tickLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip content={<ChartTooltip />} /><Area type="monotone" dataKey="revenue" name={t("dashboard.revenue")} stroke="#32E875" strokeWidth={2.25} fill="url(#revenueFill)" dot={{ r: 2.5, fill: "#32E875", strokeWidth: 0 }} activeDot={{ r: 4, stroke: "#071014", strokeWidth: 2 }} /></AreaChart></ResponsiveContainer></div></ChartCard>
       <ChartCard title={t("dashboard.revenueExpenses")} icon={<BarChart3 />} actions={filter}><div className="dashboard-chart dashboard-revenue-expenses h-[176px] sm:h-[205px]" role="img" aria-label="Revenue and expenses grouped bar chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={dashboard.trend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}><CartesianGrid stroke="#344047" strokeOpacity={0.32} strokeDasharray="2 2" vertical={false} /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} axisLine={{ stroke: "#344047" }} tickLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip content={<ChartTooltip />} /><Legend wrapperStyle={{ fontSize: 10, color: "#93A1AA" }} /><Bar dataKey="revenue" name={t("dashboard.revenue")} fill="#32E875" radius={[3, 3, 0, 0]} maxBarSize={18} /><Bar dataKey="expenses" name={t("dashboard.expenses")} fill="#93A1AA" radius={[3, 3, 0, 0]} maxBarSize={18} /></BarChart></ResponsiveContainer></div></ChartCard>
-      <ChartCard title={t("dashboard.profitTrend")} icon={<TrendingUp />} actions={filter}><div className="dashboard-chart h-[176px] sm:h-[205px]" role="img" aria-label="Net profit line chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dashboard.trend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}><defs><linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#32E875" stopOpacity={0.28} /><stop offset="100%" stopColor="#32E875" stopOpacity={0} /></linearGradient></defs><CartesianGrid stroke="#344047" strokeOpacity={0.32} strokeDasharray="2 2" /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} axisLine={{ stroke: "#344047" }} tickLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip content={<ChartTooltip />} /><Area type="monotone" dataKey="profit" name={t("dashboard.profit")} stroke="#32E875" strokeWidth={2.25} fill="url(#profitFill)" dot={{ r: 2.5, fill: "#32E875" }} /></AreaChart></ResponsiveContainer></div></ChartCard>
+      {dashboard.profitAvailable ? <ChartCard title={t("dashboard.profitTrend")} icon={<TrendingUp />} actions={filter}><div className="dashboard-chart h-[176px] sm:h-[205px]" role="img" aria-label="Net profit line chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dashboard.trend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}><defs><linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#32E875" stopOpacity={0.28} /><stop offset="100%" stopColor="#32E875" stopOpacity={0} /></linearGradient></defs><CartesianGrid stroke="#344047" strokeOpacity={0.32} strokeDasharray="2 2" /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} axisLine={{ stroke: "#344047" }} tickLine={false} /><YAxis tick={{ fill: "#93A1AA", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} /><Tooltip content={<ChartTooltip />} /><Area type="monotone" dataKey="profit" name={t("dashboard.profit")} stroke="#32E875" strokeWidth={2.25} fill="url(#profitFill)" dot={{ r: 2.5, fill: "#32E875" }} /></AreaChart></ResponsiveContainer></div></ChartCard> : <ChartCard title={t("dashboard.profitTrend")} icon={<TrendingUp />}><div className="flex h-[176px] items-center justify-center px-6 text-center sm:h-[205px]"><div><TrendingUp className="mx-auto size-8 text-muted" /><p className="mt-3 text-xs font-semibold text-secondary">{t("dashboard.profitWholeGymOnly")}</p><p className="mt-1 text-[10px] leading-relaxed text-muted">{t("dashboard.profitUnavailableReason")}</p></div></div></ChartCard>}
     </section>
-    <section className="grid gap-2.5 sm:gap-3 xl:grid-cols-3"><DonutPanel title={t("dashboard.membershipStatus")} data={dashboard.membershipStatus} totalLabel={t("dashboard.total")} /><DonutPanel title={t("dashboard.paymentStatus")} data={dashboard.paymentStatus} totalLabel={t("dashboard.total")} /><DonutPanel title={t("dashboard.membershipPlans")} data={dashboard.planDistribution} totalLabel={t("dashboard.total")} pie /></section>
+    <section className="grid gap-2.5 sm:gap-3 xl:grid-cols-2"><DonutPanel title={t("dashboard.membershipStatus")} data={dashboard.membershipStatus} totalLabel={t("dashboard.total")} /><DonutPanel title={t("dashboard.paymentStatus")} data={dashboard.paymentStatus} totalLabel={t("dashboard.total")} /></section>
     <section className="grid gap-2.5 sm:gap-3 xl:grid-cols-3">
       <ChartCard title={t("dashboard.newMembers")} icon={<UserPlus />} actions={filter} className="xl:col-span-3"><div className="dashboard-chart dashboard-new-members h-[176px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={dashboard.trend} margin={{ top: 4, right: 10, left: -24, bottom: 0 }}><CartesianGrid stroke="#344047" strokeOpacity={0.3} strokeDasharray="2 2" vertical={false} /><XAxis dataKey="label" tick={{ fill: "#93A1AA", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "#344047" }} /><YAxis allowDecimals={false} tick={{ fill: "#93A1AA", fontSize: 9 }} tickLine={false} axisLine={false} /><Tooltip /><Bar dataKey="newMembers" name="New members" fill="#38A9FF" radius={[4, 4, 0, 0]} maxBarSize={32} /></BarChart></ResponsiveContainer></div></ChartCard>
     </section>

@@ -5,10 +5,11 @@ import { useForm } from "react-hook-form";
 import { api } from "@/services";
 import { getErrorMessage, todayInput } from "@/lib/utils";
 import { useToast } from "@/components/toast-provider";
+import { useLocale } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/form-controls";
-import type { Staff, StaffInput } from "@/types/api";
+import type { Staff, StaffInput, UserRole } from "@/types/api";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -23,6 +24,7 @@ interface StaffFormValues {
   status: Staff["status"];
   address: string;
   notes: string;
+  accessRole: UserRole | "";
   photo?: FileList;
 }
 
@@ -50,6 +52,7 @@ export function StaffFormDialog({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
+  const { t } = useLocale();
   const [serverError, setServerError] = useState("");
   const editing = Boolean(staff);
   const {
@@ -71,6 +74,7 @@ export function StaffFormDialog({
       status: staff?.status ?? "Active",
       address: staff?.address ?? "",
       notes: staff?.notes ?? "",
+      accessRole: staff?.accessRole ?? "",
       photo: undefined,
     });
     setServerError("");
@@ -90,6 +94,7 @@ export function StaffFormDialog({
       address: optionalText(values.address),
       notes: optionalText(values.notes),
       photo,
+      accessRole: staff?.profileId && values.accessRole ? values.accessRole : undefined,
     };
 
     try {
@@ -174,6 +179,16 @@ export function StaffFormDialog({
               <Select {...register("status")}>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
+              </Select>
+            </Field>
+            <Field label={t("staff.role")} hint={staff?.profileId ? "Controls this linked account's application access." : "Link an authenticated profile before assigning access."}>
+              <Select disabled={!staff?.profileId} {...register("accessRole", { validate: (value) => !staff?.profileId || Boolean(value) || t("common.required") })}>
+                <option value="">{t("staff.selectRole")}</option>
+                <option value="OWNER">{t("staff.owner")}</option>
+                <option value="ADMIN">{t("staff.admin")}</option>
+                <option value="MANAGER">{t("staff.manager")}</option>
+                <option value="RECEPTIONIST">{t("staff.receptionist")}</option>
+                <option value="LADIES_RECEPTIONIST">{t("staff.ladiesReceptionist")}</option>
               </Select>
             </Field>
           </div>

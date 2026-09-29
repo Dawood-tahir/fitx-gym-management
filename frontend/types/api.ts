@@ -1,4 +1,6 @@
-export type UserRole = "OWNER" | "ADMIN" | "MANAGER" | "RECEPTIONIST";
+export type UserRole = "OWNER" | "ADMIN" | "MANAGER" | "RECEPTIONIST" | "LADIES_RECEPTIONIST";
+export type MemberSection = "gents" | "ladies";
+export type GymSection = "all" | MemberSection;
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -93,6 +95,7 @@ export interface Member {
   email?: string;
   cnic?: string;
   gender?: string;
+  section?: MemberSection;
   dateOfBirth?: string;
   address?: string;
   emergencyContactName?: string;
@@ -127,6 +130,7 @@ export interface MemberInput {
   email?: string;
   cnic?: string;
   gender?: string;
+  section: MemberSection;
   dateOfBirth?: string;
   address?: string;
   emergencyContactName?: string;
@@ -233,6 +237,7 @@ export interface Staff {
   photoPath?: string;
   photoUrl?: string;
   profileId?: string;
+  accessRole?: UserRole;
   createdAt?: string;
 }
 
@@ -247,6 +252,7 @@ export interface StaffInput {
   address?: string;
   notes?: string;
   photo?: File;
+  accessRole?: UserRole;
 }
 
 export interface Equipment {
@@ -336,7 +342,7 @@ export interface TrendPoint {
   label: string;
   revenue: number;
   expenses: number;
-  profit: number;
+  profit: number | null;
   newMembers: number;
 }
 
@@ -346,7 +352,10 @@ export interface DistributionPoint {
 }
 
 export interface DashboardData {
+  section: GymSection;
+  profitAvailable: boolean;
   totalMembers?: number;
+  unclassifiedMembers?: number;
   activeMembers: number;
   activeMembersChange: number;
   expiringSoon: number;
@@ -364,11 +373,10 @@ export interface DashboardData {
   netProfit: number;
   profitChange: number;
   pendingComplaints?: number;
-  equipmentMaintenance?: number;
+  newMembers?: number;
   trend: TrendPoint[];
   membershipStatus: DistributionPoint[];
   paymentStatus: DistributionPoint[];
-  planDistribution: DistributionPoint[];
   recentMembers: Member[];
   recentPayments: Payment[];
   recentExpenses: Expense[];

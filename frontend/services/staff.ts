@@ -1,11 +1,20 @@
 import { createClient } from "@/lib/supabase/client";
-import type { PagedResult, Staff, StaffInput } from "@/types/api";
-import type { StaffRow } from "@/types/database";
+import type { PagedResult, Staff, StaffInput, UserRole } from "@/types/api";
+import type { ProfileRow, StaffRow } from "@/types/database";
+import { normalizeRole } from "@/lib/access";
 import { ApiError, throwIfError } from "./errors";
 import { numberValue, optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
 import { removeImage, signedImageUrl, uploadImage } from "./storage";
 
-async function toStaff(row: StaffRow): Promise<Staff> {
+const databaseRole: Record<UserRole, ProfileRow["role"]> = {
+  OWNER: "owner",
+  ADMIN: "admin",
+  MANAGER: "manager",
+  RECEPTIONIST: "receptionist",
+  LADIES_RECEPTIONIST: "ladies_receptionist",
+};
+
+async function toStaff(row: StaffRow, role?: ProfileRow["role"]): Promise<Staff> {
   return {
     id: row.id,
     fullName: row.full_name,
@@ -20,6 +29,7 @@ async function toStaff(row: StaffRow): Promise<Staff> {
     photoPath: row.photo_path ?? undefined,
     photoUrl: await signedImageUrl("staff-photos", row.photo_path),
     profileId: row.profile_id ?? undefined,
+    accessRole: role ? normalizeRole(role) : undefined,
     createdAt: row.created_at,
   };
 }
@@ -39,7 +49,13 @@ export const staffService = {
     if (params.position) query = query.ilike("position", String(params.position));
     const { data, error, count } = await query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
     throwIfError(error, "Staff records could not be loaded.");
-    return pageResult(await Promise.all((data ?? []).map(toStaff)), page, pageSize, count);
+    const profileIds = (data ?? []).map((row) => row.profile_id).filter((id): id is string => Boolean(id));
+    const profilesResult = profileIds.length
+      ? await createClient().from("profiles").select("id,role").in("id", profileIds)
+      : { data: [] as Array<Pick<ProfileRow, "id" | "role">>, error: null };
+    throwIfError(profilesResult.error, "Staff access roles could not be loaded.");
+    const roles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile.role]));
+    return pageResult(await Promise.all((data ?? []).map((row) => toStaff(row, row.profile_id ? roles.get(row.profile_id) : undefined))), page, pageSize, count);
   },
 
   async create(input: StaffInput) {
@@ -96,7 +112,11 @@ export const staffService = {
     if (photoPath && existing.photo_path && photoPath !== existing.photo_path) {
       await removeImage("staff-photos", existing.photo_path).catch(() => undefined);
     }
-    return toStaff(data);
+    if (input.accessRole && data.profile_id) {
+      const { error: roleError } = await supabase.from("profiles").update({ role: databaseRole[input.accessRole] }).eq("id", data.profile_id);
+      throwIfError(roleError, "The staff access role could not be updated.");
+    }
+    return toStaff(data, input.accessRole ? databaseRole[input.accessRole] : undefined);
   },
 
   async disable(id: string) {
