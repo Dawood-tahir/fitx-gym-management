@@ -1,6 +1,7 @@
 export type UserRole = "OWNER" | "ADMIN" | "MANAGER" | "RECEPTIONIST" | "LADIES_RECEPTIONIST";
 export type MemberSection = "gents" | "ladies";
 export type GymSection = "all" | MemberSection;
+export type AdmissionFeeStatus = "paid" | "waived" | "legacy_paid";
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -102,6 +103,8 @@ export interface Member {
   emergencyContactPhone?: string;
   profilePhotoPath?: string;
   profilePhotoUrl?: string;
+  admissionFeeStatus: AdmissionFeeStatus;
+  admissionFeePaidAt?: string;
   status?: "Active" | "Inactive" | "Suspended" | "Archived";
   planId?: string;
   planName: string;
@@ -143,6 +146,7 @@ export interface MemberInput {
   discount: number;
   amountPaid: number;
   paymentMethodId?: string;
+  addAdmissionFee: boolean;
   notes?: string;
   profilePhoto?: File;
 }
@@ -156,6 +160,16 @@ export interface RenewMembershipInput {
   paymentMethodId?: string;
   referenceNumber?: string;
   notes?: string;
+}
+
+export interface MembershipDateChange {
+  subscriptionId: string;
+  oldStartDate: string;
+  newStartDate: string;
+  oldEndDate: string;
+  newEndDate: string;
+  changedBy: string;
+  changedAt: string;
 }
 
 export interface Payment {
@@ -174,7 +188,7 @@ export interface Payment {
   balance: number;
   method: string;
   methodId?: string;
-  paymentType?: string;
+  paymentType?: "Membership" | "Renewal" | "Registration" | "Admission Fee" | "Other";
   status: PaymentStatus;
   referenceNumber?: string;
   notes?: string;

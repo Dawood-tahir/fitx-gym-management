@@ -203,13 +203,14 @@ export default function PaymentsPage() {
           ) : (
             <>
               <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full min-w-[1120px] text-start text-xs">
+                <table className="w-full min-w-[1200px] text-start text-xs">
                   <thead>
                     <tr className="bg-white/[.055] text-[10px] uppercase tracking-wide text-muted">
                       <th className="rounded-s-lg px-3 py-3 font-semibold">{t("payments.paymentId")}</th>
                       <th className="px-3 py-3 font-semibold">{t("common.date")}</th>
                       <th className="px-3 py-3 font-semibold">{t("payments.member")}</th>
                       <th className="px-3 py-3 font-semibold">Plan</th>
+                      <th className="px-3 py-3 font-semibold">{t("payments.type")}</th>
                       <th className="px-3 py-3 font-semibold">{t("payments.amountPaid")}</th>
                       <th className="px-3 py-3 font-semibold">{t("payments.balance")}</th>
                       <th className="px-3 py-3 font-semibold">{t("payments.method")}</th>
@@ -228,6 +229,7 @@ export default function PaymentsPage() {
                           {payment.referenceNumber && <p className="mt-0.5 max-w-40 truncate text-[10px] text-muted">{payment.referenceNumber}</p>}
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary">{payment.planName || "—"}</td>
+                        <td className="whitespace-nowrap px-3 py-3 font-medium text-foreground">{payment.paymentType || t("payments.payment")}</td>
                         <td className="whitespace-nowrap px-3 py-3 font-semibold">{formatCurrency(payment.amountPaid, locale)}</td>
                         <td className={`whitespace-nowrap px-3 py-3 ${(payment.balance ?? 0) > 0 ? "text-warning" : "text-secondary"}`}>{formatCurrency(payment.balance ?? 0, locale)}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-secondary">{payment.method}</td>
@@ -267,6 +269,7 @@ export default function PaymentsPage() {
                     <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                       <MobileInfo label={t("common.date")} value={formatDate(payment.date, locale)} />
                       <MobileInfo label={t("payments.method")} value={payment.method} />
+                      <MobileInfo label={t("payments.type")} value={payment.paymentType || t("payments.payment")} />
                       <MobileInfo label={t("payments.amountPaid")} value={formatCurrency(payment.amountPaid, locale)} strong />
                       <MobileInfo label={t("payments.balance")} value={formatCurrency(payment.balance ?? 0, locale)} />
                     </dl>

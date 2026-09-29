@@ -29,6 +29,8 @@ export interface MemberRow {
   national_id: string | null;
   gender: string | null;
   section: "gents" | "ladies" | null;
+  admission_fee_status: "paid" | "waived" | "legacy_paid";
+  admission_fee_paid_at: string | null;
   date_of_birth: string | null;
   address: string | null;
   emergency_contact_name: string | null;
@@ -90,7 +92,7 @@ export interface PaymentRow {
   payment_method_id: string;
   payment_date: string;
   reporting_date: string;
-  payment_type: "membership" | "renewal" | "registration" | "other";
+  payment_type: "membership" | "renewal" | "registration" | "admission_fee" | "other";
   reference_number: string | null;
   notes: string | null;
   received_by: string | null;
@@ -301,6 +303,7 @@ export interface Database {
           p_discount?: number;
           p_amount_paid?: number;
           p_payment_method_id?: string | null;
+          p_add_admission_fee?: boolean;
         };
         Returns: string;
       };
@@ -317,6 +320,10 @@ export interface Database {
           p_notes?: string | null;
         };
         Returns: string;
+      };
+      change_membership_start_date: {
+        Args: { p_member_id: string; p_new_start_date: string };
+        Returns: Json;
       };
       record_payment: {
         Args: {

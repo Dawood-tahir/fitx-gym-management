@@ -42,3 +42,15 @@ export async function signedImageUrl(bucket: FitxImageBucket, path?: string | nu
   if (error) return undefined;
   return data.signedUrl;
 }
+
+export async function signedImageUrls(bucket: FitxImageBucket, paths: Array<string | null | undefined>) {
+  const uniquePaths = [...new Set(paths.filter((path): path is string => Boolean(path)))];
+  if (!uniquePaths.length) return new Map<string, string>();
+  const { data, error } = await createClient().storage.from(bucket).createSignedUrls(uniquePaths, 60 * 60);
+  if (error) return new Map<string, string>();
+  return new Map(
+    data
+      .filter((item): item is typeof item & { signedUrl: string } => Boolean(item.signedUrl))
+      .map((item) => [item.path, item.signedUrl]),
+  );
+}

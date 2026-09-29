@@ -31,7 +31,7 @@ async function enrichExpenses(rows: ExpenseRow[]): Promise<Expense[]> {
     title: row.title,
     date: row.expense_date,
     categoryId: row.category_id,
-    category: categories.get(row.category_id) ?? "Unknown",
+    category: categories.get(row.category_id) ?? "Uncategorized",
     description: row.description ?? row.title,
     amount: numberValue(row.amount),
     paymentMethod: methods.get(row.payment_method_id) ?? "Unknown",

@@ -66,6 +66,7 @@ function recentPayment(value: Json): Payment {
     amountPaid: amount,
     balance: numeric(row, "balance"),
     method: textValue(row, "payment_method", "method") || "—",
+    paymentType: titleCase(textValue(row, "payment_type") || "membership") as Payment["paymentType"],
     status: textValue(row, "status") === "voided" ? "Voided" : "Paid",
     referenceNumber: textValue(row, "reference_number") || undefined,
     receivedBy: textValue(row, "received_by_name", "received_by") || undefined,

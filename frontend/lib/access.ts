@@ -5,8 +5,8 @@ export type AccessRole = UserRole | "owner" | "admin" | "manager" | "receptionis
 const removedRoutes = ["/plans", "/equipment"];
 
 const restrictedRoutes: Array<{ prefix: string; roles: UserRole[] }> = [
-  { prefix: "/dashboard", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { prefix: "/expenses", roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { prefix: "/dashboard", roles: ["OWNER", "ADMIN", "MANAGER", "LADIES_RECEPTIONIST"] },
+  { prefix: "/expenses", roles: ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"] },
   { prefix: "/reports", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { prefix: "/staff", roles: ["OWNER"] },
   { prefix: "/settings", roles: ["OWNER"] },
@@ -25,6 +25,22 @@ export function isReceptionStaff(role: AccessRole) {
   return normalized === "RECEPTIONIST" || normalized === "LADIES_RECEPTIONIST";
 }
 
+export function isReceptionist(role: AccessRole) {
+  return normalizeRole(role) === "RECEPTIONIST";
+}
+
+export function isLadiesReceptionist(role: AccessRole) {
+  return normalizeRole(role) === "LADIES_RECEPTIONIST";
+}
+
+export function canAccessExpenses(role: AccessRole) {
+  return ["OWNER", "ADMIN", "MANAGER", "RECEPTIONIST"].includes(normalizeRole(role));
+}
+
+export function canManageMember(role: AccessRole, memberSection?: "gents" | "ladies") {
+  return !isLadiesReceptionist(role) || memberSection === "ladies";
+}
+
 export function roleLabel(role: AccessRole) {
   return normalizeRole(role) === "LADIES_RECEPTIONIST"
     ? "Ladies Receptionist"
@@ -32,7 +48,7 @@ export function roleLabel(role: AccessRole) {
 }
 
 export function defaultRouteForRole(role: AccessRole) {
-  return isReceptionStaff(role) ? "/members" : "/dashboard";
+  return isReceptionist(role) ? "/members" : "/dashboard";
 }
 
 export function canAccessRoute(pathname: string, role: AccessRole) {

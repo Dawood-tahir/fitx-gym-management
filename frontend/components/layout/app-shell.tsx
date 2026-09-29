@@ -9,7 +9,7 @@ import { PageLoading } from "@/components/ui/states";
 import { Sidebar, SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
-import { isReceptionStaff } from "@/lib/access";
+import { canAccessRoute, defaultRouteForRole } from "@/lib/access";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
@@ -23,7 +23,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     setCollapsed(stored ? stored === "true" : window.innerWidth < 1280);
   }, []);
   useEffect(() => { if (ready && !user) router.replace(`/login?next=${encodeURIComponent(pathname)}`); }, [ready, user, router, pathname]);
-  useEffect(() => { if (ready && user && isReceptionStaff(user.role) && pathname.startsWith("/dashboard")) router.replace("/members"); }, [ready, user, pathname, router]);
+  useEffect(() => {
+    if (ready && user && !canAccessRoute(pathname, user.role)) {
+      router.replace(defaultRouteForRole(user.role));
+    }
+  }, [ready, user, pathname, router]);
   useEffect(() => { setMobileOpen(false); }, [pathname]);
   useEffect(() => {
     if (!mobileOpen) return;

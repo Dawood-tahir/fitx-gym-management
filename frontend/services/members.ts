@@ -3,6 +3,7 @@ import type {
   Member,
   MemberInput,
   MembershipHistoryItem,
+  MembershipDateChange,
   MemberTimelineEvent,
   MembershipStatus,
   PagedResult,
@@ -21,7 +22,7 @@ import type {
 } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
 import { numberValue, optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
-import { removeImage, signedImageUrl, uploadImage } from "./storage";
+import { removeImage, signedImageUrl, signedImageUrls, uploadImage } from "./storage";
 
 function membershipStatus(value: string): MembershipStatus {
   const statuses: Record<string, MembershipStatus> = {
@@ -63,6 +64,8 @@ function toMember(row: MemberOverviewRow): Member {
     emergencyContactName: row.emergency_contact_name ?? undefined,
     emergencyContactPhone: row.emergency_contact_phone ?? undefined,
     profilePhotoPath: row.profile_photo_path ?? undefined,
+    admissionFeeStatus: row.admission_fee_status,
+    admissionFeePaidAt: row.admission_fee_paid_at ?? undefined,
     status: memberState,
     planId: row.plan_id ?? undefined,
     planName: row.plan_name ?? "—",
@@ -102,7 +105,7 @@ function toPayment(
     balance: 0,
     method: methodName,
     methodId: row.payment_method_id,
-    paymentType: titleCase(row.payment_type),
+    paymentType: titleCase(row.payment_type) as Payment["paymentType"],
     status: row.is_voided ? "Voided" : "Paid",
     referenceNumber: row.reference_number ?? undefined,
     notes: row.notes ?? undefined,
@@ -232,7 +235,12 @@ export const membersService = {
       : query.order("created_at", { ascending: false });
     const { data, error, count } = await query.range(from, from + pageSize - 1);
     throwIfError(error, "Members could not be loaded.");
-    return pageResult((data ?? []).map(toMember), page, pageSize, count);
+    const members = (data ?? []).map(toMember);
+    const photoUrls = await signedImageUrls("member-photos", members.map((member) => member.profilePhotoPath));
+    return pageResult(members.map((member) => ({
+      ...member,
+      profilePhotoUrl: member.profilePhotoPath ? photoUrls.get(member.profilePhotoPath) : undefined,
+    })), page, pageSize, count);
   },
 
   async get(id: string) {
@@ -266,6 +274,7 @@ export const membersService = {
         p_discount: input.discount,
         p_amount_paid: input.amountPaid,
         p_payment_method_id: input.paymentMethodId || null,
+        p_add_admission_fee: input.addAdmissionFee,
       });
       throwIfError(error, "The member could not be created.");
       if (!data) throw new ApiError("The member was not created.", 500);
@@ -336,6 +345,25 @@ export const membersService = {
     });
     throwIfError(error, "The membership could not be renewed.");
     return membersService.get(id);
+  },
+
+  async changeMembershipStartDate(id: string, startDate: string): Promise<MembershipDateChange> {
+    const { data, error } = await createClient().rpc("change_membership_start_date", {
+      p_member_id: id,
+      p_new_start_date: startDate,
+    });
+    throwIfError(error, "The membership date could not be changed.");
+    const result = data as Record<string, string> | null;
+    if (!result) throw new ApiError("The membership date was not changed.", 500);
+    return {
+      subscriptionId: result.subscription_id,
+      oldStartDate: result.old_start_date,
+      newStartDate: result.new_start_date,
+      oldEndDate: result.old_end_date,
+      newEndDate: result.new_end_date,
+      changedBy: result.changed_by,
+      changedAt: result.changed_at,
+    };
   },
 
   async history(id: string) {

@@ -247,12 +247,14 @@ export default function ExpensesPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3 className="truncate font-semibold">{expense.title || expense.description}</h3>
-                        <p className="mt-1 text-[10px] text-muted">{expense.category} · {formatDate(expense.date, locale)}</p>
+                        <p className="mt-1 text-[10px] text-muted">{formatDate(expense.date, locale)}</p>
                       </div>
                       <strong className="shrink-0 text-sm text-foreground">{formatCurrency(expense.amount, locale)}</strong>
                     </div>
                     {expense.title && <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-secondary">{expense.description}</p>}
-                    <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                      <MobileInfo label={t("expenses.category")} value={expense.category || t("expenses.uncategorized")} />
+                      <MobileInfo label={t("common.amount")} value={formatCurrency(expense.amount, locale)} />
                       <MobileInfo label={t("expenses.paymentMethod")} value={expense.paymentMethod || "—"} />
                       <MobileInfo label={t("expenses.addedBy")} value={expense.addedBy || "—"} />
                     </dl>
