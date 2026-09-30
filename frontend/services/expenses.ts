@@ -1,29 +1,32 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentBusinessRange, previousBusinessRange } from "@/lib/business-period";
 import type { Expense, ExpenseInput, ExpenseSummary, PagedResult } from "@/types/api";
-import type { ExpenseCategoryRow, ExpenseRow, Json, PaymentMethodRow, ProfileRow } from "@/types/database";
+import type { ExpenseRow, Json, ProfileRow } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
 import { jsonRecord, numberValue, optionalText, pageResult, percentChange, safeSearchTerm } from "./shared";
 
-async function enrichExpenses(rows: ExpenseRow[]): Promise<Expense[]> {
+const expenseColumns = "id,expense_number,title,category_id,description,amount,expense_date,payment_method_id,reference_number,notes,created_by,created_at";
+type ExpenseListRow = Pick<ExpenseRow, "id" | "expense_number" | "title" | "category_id" | "description" | "amount" | "expense_date" | "payment_method_id" | "reference_number" | "notes" | "created_by" | "created_at">;
+
+async function enrichExpenses(rows: ExpenseListRow[]): Promise<Expense[]> {
   if (!rows.length) return [];
   const supabase = createClient();
   const categoryIds = [...new Set(rows.map((row) => row.category_id))];
   const methodIds = [...new Set(rows.map((row) => row.payment_method_id))];
   const profileIds = [...new Set(rows.map((row) => row.created_by).filter((value): value is string => Boolean(value)))];
   const [categoriesResult, methodsResult, profilesResult] = await Promise.all([
-    supabase.from("expense_categories").select("*").in("id", categoryIds),
-    supabase.from("payment_methods").select("*").in("id", methodIds),
+    supabase.from("expense_categories").select("id,name").in("id", categoryIds),
+    supabase.from("payment_methods").select("id,name").in("id", methodIds),
     profileIds.length
-      ? supabase.from("profiles").select("*").in("id", profileIds)
+      ? supabase.from("profiles").select("id,full_name").in("id", profileIds)
       : Promise.resolve({ data: [] as ProfileRow[], error: null }),
   ]);
   throwIfError(categoriesResult.error, "Expense categories could not be loaded.");
   throwIfError(methodsResult.error, "Payment methods could not be loaded.");
   throwIfError(profilesResult.error, "Expense creators could not be loaded.");
-  const categories = new Map((categoriesResult.data ?? []).map((row: ExpenseCategoryRow) => [row.id, row.name]));
-  const methods = new Map((methodsResult.data ?? []).map((row: PaymentMethodRow) => [row.id, row.name]));
-  const profiles = new Map((profilesResult.data ?? []).map((row: ProfileRow) => [row.id, row.full_name]));
+  const categories = new Map((categoriesResult.data ?? []).map((row) => [row.id, row.name]));
+  const methods = new Map((methodsResult.data ?? []).map((row) => [row.id, row.name]));
+  const profiles = new Map((profilesResult.data ?? []).map((row) => [row.id, row.full_name]));
 
   return rows.map((row) => ({
     id: row.id,
@@ -49,7 +52,7 @@ export const expensesService = {
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 20)));
     const from = (page - 1) * pageSize;
     const search = safeSearchTerm(String(params.search ?? ""));
-    let query = createClient().from("expenses").select("*", { count: "exact" }).eq("is_deleted", false);
+    let query = createClient().from("expenses").select(expenseColumns, { count: "exact" }).eq("is_deleted", false);
     if (search) {
       const pattern = `%${search}%`;
       query = query.or(`title.ilike.${pattern},description.ilike.${pattern},expense_number.ilike.${pattern},reference_number.ilike.${pattern}`);
@@ -68,7 +71,7 @@ export const expensesService = {
   },
 
   async get(id: string) {
-    const { data, error } = await createClient().from("expenses").select("*").eq("id", id).eq("is_deleted", false).maybeSingle();
+    const { data, error } = await createClient().from("expenses").select(expenseColumns).eq("id", id).eq("is_deleted", false).maybeSingle();
     throwIfError(error, "The expense could not be loaded.");
     if (!data) throw new ApiError("Expense not found.", 404);
     return (await enrichExpenses([data]))[0];
@@ -89,7 +92,7 @@ export const expensesService = {
       reference_number: optionalText(input.reference),
       notes: optionalText(input.notes),
       created_by: authData.user.id,
-    }).select("*").single();
+    }).select(expenseColumns).single();
     throwIfError(error, "The expense could not be recorded.");
     return (await enrichExpenses([data]))[0];
   },
@@ -104,7 +107,7 @@ export const expensesService = {
       payment_method_id: input.paymentMethodId,
       reference_number: optionalText(input.reference),
       notes: optionalText(input.notes),
-    }).eq("id", id).eq("is_deleted", false).select("*").single();
+    }).eq("id", id).eq("is_deleted", false).select(expenseColumns).single();
     throwIfError(error, "The expense could not be updated.");
     return (await enrichExpenses([data]))[0];
   },
@@ -120,7 +123,7 @@ export const expensesService = {
   async categories() {
     const { data, error } = await createClient()
       .from("expense_categories")
-      .select("*")
+      .select("id,name,is_active")
       .order("is_system", { ascending: false })
       .order("name");
     throwIfError(error, "Expense categories could not be loaded.");
@@ -135,29 +138,19 @@ export const expensesService = {
     const previousFrom = previous.from;
     const previousTo = previous.to;
     const supabase = createClient();
-    const [currentResult, previousResult, categoryRowsResult] = await Promise.all([
+    const [currentResult, previousResult] = await Promise.all([
       supabase.rpc("report_summary", { p_from: thisFrom, p_to: thisTo }),
       supabase.rpc("report_summary", { p_from: previousFrom, p_to: previousTo }),
-      supabase.from("expenses").select("category_id,amount").eq("is_deleted", false).gte("expense_date", thisFrom).lte("expense_date", thisTo),
     ]);
     throwIfError(currentResult.error, "Expense totals could not be loaded.");
     throwIfError(previousResult.error, "Previous expense totals could not be loaded.");
-    throwIfError(categoryRowsResult.error, "Expense categories could not be summarized.");
     const currentReport = jsonRecord(currentResult.data as Json);
     const previousReport = jsonRecord(previousResult.data as Json);
     const currentTotal = numberValue(currentReport.total_expenses as number | string | null | undefined);
     const previousTotal = numberValue(previousReport.total_expenses as number | string | null | undefined);
-    const byCategory = new Map<string, number>();
-    (categoryRowsResult.data ?? []).forEach((row) => byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + numberValue(row.amount)));
-    const largestId = [...byCategory.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-    let largestCategory = "—";
-    if (largestId) {
-      const { data } = await supabase.from("expense_categories").select("name").eq("id", largestId).maybeSingle();
-      largestCategory = data?.name ?? "—";
-    }
     return {
       totalThisMonth: currentTotal,
-      largestCategory,
+      largestCategory: typeof currentReport.largest_expense_category === "string" ? currentReport.largest_expense_category : "—",
       changePercentFromLastMonth: percentChange(currentTotal, previousTotal),
     };
   },

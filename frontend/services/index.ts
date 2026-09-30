@@ -13,7 +13,7 @@ import { safeSearchTerm } from "./shared";
 
 const notifications = {
   async list(): Promise<NotificationItem[]> {
-    const { data, error } = await createClient().from("notifications").select("*").order("created_at", { ascending: false }).limit(25);
+    const { data, error } = await createClient().from("notifications").select("id,title,message,kind,is_read,created_at").order("created_at", { ascending: false }).limit(25);
     throwIfError(error, "Notifications could not be loaded.");
     return (data ?? []).map((row) => ({ id: row.id, title: row.title, message: row.message, type: row.kind, isRead: row.is_read, createdAt: row.created_at }));
   },

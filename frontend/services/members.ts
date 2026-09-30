@@ -14,15 +14,19 @@ import type {
 } from "@/types/api";
 import type {
   MemberOverviewRow,
-  MembershipPlanRow,
-  PaymentMethodRow,
   PaymentRow,
-  ProfileRow,
   SubscriptionRow,
 } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
 import { numberValue, optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
 import { removeImage, signedImageUrl, signedImageUrls, uploadImage } from "./storage";
+
+const memberOverviewColumns = "id,member_code,full_name,phone,email,national_id,gender,section,date_of_birth,address,emergency_contact_name,emergency_contact_phone,profile_photo_path,admission_fee_status,admission_fee_paid_at,status,plan_id,plan_name,join_date,start_date,end_date,membership_amount,discount,final_amount,amount_paid,balance,payment_status,membership_status,notes,created_at,subscription_id";
+const subscriptionHistoryColumns = "id,member_id,plan_id,start_date,end_date,discount,final_amount,status,is_current";
+const paymentHistoryColumns = "id,payment_number,member_id,subscription_id,amount,payment_method_id,payment_date,payment_type,reference_number,notes,received_by,is_voided,created_at";
+type MemberListRow = Pick<MemberOverviewRow, "id" | "member_code" | "full_name" | "phone" | "email" | "national_id" | "gender" | "section" | "date_of_birth" | "address" | "emergency_contact_name" | "emergency_contact_phone" | "profile_photo_path" | "admission_fee_status" | "admission_fee_paid_at" | "status" | "plan_id" | "plan_name" | "join_date" | "start_date" | "end_date" | "membership_amount" | "discount" | "final_amount" | "amount_paid" | "balance" | "payment_status" | "membership_status" | "notes" | "created_at" | "subscription_id">;
+type SubscriptionHistoryRow = Pick<SubscriptionRow, "id" | "member_id" | "plan_id" | "start_date" | "end_date" | "discount" | "final_amount" | "status" | "is_current">;
+type PaymentHistoryRow = Pick<PaymentRow, "id" | "payment_number" | "member_id" | "subscription_id" | "amount" | "payment_method_id" | "payment_date" | "payment_type" | "reference_number" | "notes" | "received_by" | "is_voided" | "created_at">;
 
 function membershipStatus(value: string): MembershipStatus {
   const statuses: Record<string, MembershipStatus> = {
@@ -48,7 +52,7 @@ function paymentStatus(value: string): PaymentStatus {
   return statuses[value] ?? "Unpaid";
 }
 
-function toMember(row: MemberOverviewRow): Member {
+function toMember(row: MemberListRow): Member {
   const memberState = titleCase(row.status) as Member["status"];
   return {
     id: row.id,
@@ -86,7 +90,7 @@ function toMember(row: MemberOverviewRow): Member {
 }
 
 function toPayment(
-  row: PaymentRow,
+  row: PaymentHistoryRow,
   memberName: string,
   methodName: string,
   planName?: string,
@@ -120,35 +124,32 @@ async function enrichMember(member: Member) {
     paymentsResult,
     methodsResult,
     profilesResult,
+    plansResult,
     timelineResult,
   ] = await Promise.all([
-    supabase.from("member_subscriptions").select("*").eq("member_id", member.id).order("start_date", { ascending: false }),
-    supabase.from("payments").select("*").eq("member_id", member.id).order("payment_date", { ascending: false }),
-    supabase.from("payment_methods").select("*"),
-    supabase.from("profiles").select("*"),
+    supabase.from("member_subscriptions").select(subscriptionHistoryColumns).eq("member_id", member.id).order("start_date", { ascending: false }),
+    supabase.from("payments").select(paymentHistoryColumns).eq("member_id", member.id).order("payment_date", { ascending: false }),
+    supabase.from("payment_methods").select("id,name"),
+    supabase.from("profiles").select("id,full_name"),
+    supabase.from("membership_plans").select("id,name"),
     supabase.rpc("member_timeline", { p_member_id: member.id }),
   ]);
   throwIfError(subscriptionsResult.error, "Membership history could not be loaded.");
   throwIfError(paymentsResult.error, "Payment history could not be loaded.");
+  throwIfError(plansResult.error, "Membership plans could not be loaded.");
   throwIfError(timelineResult.error, "Member history could not be loaded.");
 
   const subscriptions = subscriptionsResult.data ?? [];
-  const planIds = [...new Set(subscriptions.map((item) => item.plan_id))];
-  const plansResult = planIds.length
-    ? await supabase.from("membership_plans").select("*").in("id", planIds)
-    : { data: [] as MembershipPlanRow[], error: null };
-  throwIfError(plansResult.error, "Membership plans could not be loaded.");
-
   const plans = new Map((plansResult.data ?? []).map((plan) => [plan.id, plan]));
-  const methods = new Map((methodsResult.data ?? []).map((method: PaymentMethodRow) => [method.id, method.name]));
-  const profiles = new Map((profilesResult.data ?? []).map((profile: ProfileRow) => [profile.id, profile.full_name]));
+  const methods = new Map((methodsResult.data ?? []).map((method) => [method.id, method.name]));
+  const profiles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile.full_name]));
   const paidBySubscription = new Map<string, number>();
   (paymentsResult.data ?? []).filter((payment) => !payment.is_voided && payment.subscription_id).forEach((payment) => {
     const key = payment.subscription_id as string;
     paidBySubscription.set(key, (paidBySubscription.get(key) ?? 0) + numberValue(payment.amount));
   });
 
-  const history: MembershipHistoryItem[] = subscriptions.map((subscription: SubscriptionRow) => {
+  const history: MembershipHistoryItem[] = subscriptions.map((subscription: SubscriptionHistoryRow) => {
     const paid = paidBySubscription.get(subscription.id) ?? 0;
     const effectiveStatus = subscription.status === "active" && subscription.end_date < new Date().toISOString().slice(0, 10)
       ? "Expired"
@@ -176,7 +177,7 @@ async function enrichMember(member: Member) {
     amountPaid: current.amountPaid,
   }));
 
-  const paymentHistory = (paymentsResult.data ?? []).map((payment: PaymentRow) => {
+  const paymentHistory = (paymentsResult.data ?? []).map((payment: PaymentHistoryRow) => {
     const subscription = subscriptions.find((item) => item.id === payment.subscription_id);
     const item = toPayment(
       payment,
@@ -215,7 +216,7 @@ export const membersService = {
     const page = Math.max(1, Number(params.page ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 20)));
     const from = (page - 1) * pageSize;
-    let query = createClient().from("member_overview").select("*", { count: "exact" });
+    let query = createClient().from("member_overview").select(memberOverviewColumns, { count: "exact" });
 
     const search = safeSearchTerm(String(params.search ?? ""));
     if (search) {
@@ -244,7 +245,7 @@ export const membersService = {
   },
 
   async get(id: string) {
-    const { data, error } = await createClient().from("member_overview").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await createClient().from("member_overview").select(memberOverviewColumns).eq("id", id).maybeSingle();
     throwIfError(error, "The member could not be loaded.");
     if (!data) throw new ApiError("Member not found.", 404);
     return enrichMember(toMember(data));

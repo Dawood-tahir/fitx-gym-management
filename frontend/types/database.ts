@@ -349,6 +349,7 @@ export interface Database {
       dashboard_summary: { Args: { p_months?: number; p_section?: "all" | "gents" | "ladies" }; Returns: Json };
       member_timeline: { Args: { p_member_id: string }; Returns: Array<{ event_at: string; event_type: string; title: string; detail: string | null; amount: number | null; subscription_id: string | null; payment_id: string | null; }> };
       report_summary: { Args: { p_from: string; p_to: string }; Returns: Json };
+      report_details: { Args: { p_from: string; p_to: string }; Returns: Json };
       current_user_role: { Args: Record<string, never>; Returns: string | null };
       is_authorized_user: { Args: Record<string, never>; Returns: boolean };
     };

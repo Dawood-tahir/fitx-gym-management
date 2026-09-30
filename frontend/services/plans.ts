@@ -4,6 +4,8 @@ import type { MembershipPlanRow } from "@/types/database";
 import { throwIfError } from "./errors";
 import { numberValue, optionalText } from "./shared";
 
+const planColumns = "id,name,description,duration_months,price,is_active,created_at,updated_at";
+
 function toPlan(row: MembershipPlanRow): MembershipPlan {
   return {
     id: row.id,
@@ -22,7 +24,7 @@ export const plansService = {
   async list() {
     const { data, error } = await createClient()
       .from("membership_plans")
-      .select("*")
+      .select(planColumns)
       .order("is_active", { ascending: false })
       .order("duration_months", { ascending: true });
     throwIfError(error, "Membership plans could not be loaded.");
@@ -36,7 +38,7 @@ export const plansService = {
       duration_months: Math.max(1, Number(input.durationMonths ?? 1)),
       price: Number(input.price ?? 0),
       is_active: input.isActive ?? true,
-    }).select("*").single();
+    }).select(planColumns).single();
     throwIfError(error, "The membership plan could not be created.");
     return toPlan(data);
   },
@@ -48,7 +50,7 @@ export const plansService = {
       ...(input.durationMonths !== undefined && { duration_months: Math.max(1, Number(input.durationMonths)) }),
       ...(input.price !== undefined && { price: Number(input.price) }),
       ...(input.isActive !== undefined && { is_active: input.isActive }),
-    }).eq("id", id).select("*").single();
+    }).eq("id", id).select(planColumns).single();
     throwIfError(error, "The membership plan could not be updated.");
     return toPlan(data);
   },

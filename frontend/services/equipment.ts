@@ -4,7 +4,10 @@ import type { EquipmentRow } from "@/types/database";
 import { throwIfError } from "./errors";
 import { numberValue, optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
 
-function toEquipment(row: EquipmentRow): Equipment {
+const equipmentColumns = "id,name,category,brand,model,serial_number,purchase_date,purchase_price,condition,status,last_maintenance_date,next_maintenance_date,notes,created_at";
+type EquipmentListRow = Pick<EquipmentRow, "id" | "name" | "category" | "brand" | "model" | "serial_number" | "purchase_date" | "purchase_price" | "condition" | "status" | "last_maintenance_date" | "next_maintenance_date" | "notes" | "created_at">;
+
+function toEquipment(row: EquipmentListRow): Equipment {
   return {
     id: row.id,
     name: row.name,
@@ -46,7 +49,7 @@ export const equipmentService = {
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 20)));
     const from = (page - 1) * pageSize;
     const search = safeSearchTerm(String(params.search ?? ""));
-    let query = createClient().from("equipment").select("*", { count: "exact" });
+    let query = createClient().from("equipment").select(equipmentColumns, { count: "exact" });
     if (search) {
       const pattern = `%${search}%`;
       query = query.or(`name.ilike.${pattern},category.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern},serial_number.ilike.${pattern}`);
@@ -66,13 +69,13 @@ export const equipmentService = {
       name: input.name.trim(),
       ...inputRow(input),
       created_by: userData.user?.id ?? null,
-    }).select("*").single();
+    }).select(equipmentColumns).single();
     throwIfError(error, "The equipment record could not be created.");
     return toEquipment(data);
   },
 
   async update(id: string, input: Partial<EquipmentInput>) {
-    const { data, error } = await createClient().from("equipment").update(inputRow(input)).eq("id", id).select("*").single();
+    const { data, error } = await createClient().from("equipment").update(inputRow(input)).eq("id", id).select(equipmentColumns).single();
     throwIfError(error, "The equipment record could not be updated.");
     return toEquipment(data);
   },

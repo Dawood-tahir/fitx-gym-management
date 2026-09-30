@@ -1,12 +1,16 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentBusinessRange, timestampBounds } from "@/lib/business-period";
 import type { PagedResult, Payment, PaymentInput, PaymentSummary } from "@/types/api";
-import type { Json, MemberRow, MembershipPlanRow, PaymentMethodRow, PaymentRow, ProfileRow, SubscriptionRow } from "@/types/database";
+import type { Json, PaymentRow, ProfileRow, SubscriptionRow } from "@/types/database";
 import { ApiError, throwIfError } from "./errors";
 import { toPayment } from "./members";
 import { jsonRecord, numberValue, optionalText, pageResult, safeSearchTerm } from "./shared";
 
-async function enrichPayments(rows: PaymentRow[]): Promise<Payment[]> {
+const paymentColumns = "id,payment_number,member_id,subscription_id,amount,payment_method_id,payment_date,reporting_date,payment_type,reference_number,notes,received_by,is_voided,created_at";
+type PaymentListRow = Pick<PaymentRow, "id" | "payment_number" | "member_id" | "subscription_id" | "amount" | "payment_method_id" | "payment_date" | "reporting_date" | "payment_type" | "reference_number" | "notes" | "received_by" | "is_voided" | "created_at">;
+type SubscriptionSummaryRow = Pick<SubscriptionRow, "id" | "plan_id" | "final_amount" | "discount">;
+
+async function enrichPayments(rows: PaymentListRow[]): Promise<Payment[]> {
   if (!rows.length) return [];
   const supabase = createClient();
   const memberIds = [...new Set(rows.map((row) => row.member_id))];
@@ -14,39 +18,35 @@ async function enrichPayments(rows: PaymentRow[]): Promise<Payment[]> {
   const subscriptionIds = [...new Set(rows.map((row) => row.subscription_id).filter((value): value is string => Boolean(value)))];
   const profileIds = [...new Set(rows.map((row) => row.received_by).filter((value): value is string => Boolean(value)))];
 
-  const [membersResult, methodsResult, subscriptionsResult, profilesResult, paidResult] = await Promise.all([
-    supabase.from("members").select("*").in("id", memberIds),
-    supabase.from("payment_methods").select("*").in("id", methodIds),
+  const [membersResult, methodsResult, subscriptionsResult, profilesResult, paidResult, plansResult] = await Promise.all([
+    supabase.from("members").select("id,full_name").in("id", memberIds),
+    supabase.from("payment_methods").select("id,name").in("id", methodIds),
     subscriptionIds.length
-      ? supabase.from("member_subscriptions").select("*").in("id", subscriptionIds)
+      ? supabase.from("member_subscriptions").select("id,plan_id,final_amount,discount").in("id", subscriptionIds)
       : Promise.resolve({ data: [] as SubscriptionRow[], error: null }),
     profileIds.length
-      ? supabase.from("profiles").select("*").in("id", profileIds)
+      ? supabase.from("profiles").select("id,full_name").in("id", profileIds)
       : Promise.resolve({ data: [] as ProfileRow[], error: null }),
     subscriptionIds.length
-      ? supabase.from("payments").select("*").in("subscription_id", subscriptionIds).eq("is_voided", false)
+      ? supabase.from("payments").select("subscription_id,amount").in("subscription_id", subscriptionIds).eq("is_voided", false)
       : Promise.resolve({ data: [] as PaymentRow[], error: null }),
+    supabase.from("membership_plans").select("id,name"),
   ]);
   throwIfError(membersResult.error, "Payment members could not be loaded.");
   throwIfError(methodsResult.error, "Payment methods could not be loaded.");
   throwIfError(subscriptionsResult.error, "Payment memberships could not be loaded.");
   throwIfError(profilesResult.error, "Payment receivers could not be loaded.");
   throwIfError(paidResult.error, "Payment balances could not be loaded.");
-
-  const subscriptions = subscriptionsResult.data ?? [];
-  const planIds = [...new Set(subscriptions.map((item) => item.plan_id))];
-  const plansResult = planIds.length
-    ? await supabase.from("membership_plans").select("*").in("id", planIds)
-    : { data: [] as MembershipPlanRow[], error: null };
   throwIfError(plansResult.error, "Membership plans could not be loaded.");
 
-  const members = new Map((membersResult.data ?? []).map((row: MemberRow) => [row.id, row.full_name]));
-  const methods = new Map((methodsResult.data ?? []).map((row: PaymentMethodRow) => [row.id, row.name]));
-  const subscriptionsById = new Map(subscriptions.map((row: SubscriptionRow) => [row.id, row]));
-  const plans = new Map((plansResult.data ?? []).map((row: MembershipPlanRow) => [row.id, row.name]));
-  const profiles = new Map((profilesResult.data ?? []).map((row: ProfileRow) => [row.id, row.full_name]));
+  const subscriptions = subscriptionsResult.data ?? [];
+  const members = new Map((membersResult.data ?? []).map((row) => [row.id, row.full_name]));
+  const methods = new Map((methodsResult.data ?? []).map((row) => [row.id, row.name]));
+  const subscriptionsById = new Map(subscriptions.map((row: SubscriptionSummaryRow) => [row.id, row]));
+  const plans = new Map((plansResult.data ?? []).map((row) => [row.id, row.name]));
+  const profiles = new Map((profilesResult.data ?? []).map((row) => [row.id, row.full_name]));
   const paid = new Map<string, number>();
-  (paidResult.data ?? []).forEach((row: PaymentRow) => {
+  (paidResult.data ?? []).forEach((row) => {
     if (row.subscription_id) paid.set(row.subscription_id, (paid.get(row.subscription_id) ?? 0) + numberValue(row.amount));
   });
 
@@ -89,7 +89,7 @@ export const paymentsService = {
       if (!memberIds.length) return pageResult([], page, pageSize, 0);
     }
 
-    let query = supabase.from("payments").select("*", { count: "exact" });
+    let query = supabase.from("payments").select(paymentColumns, { count: "exact" });
     if (memberIds) query = query.in("member_id", memberIds);
     if (params.memberId) query = query.eq("member_id", String(params.memberId));
     if (params.paymentMethodId || params.methodId) query = query.eq("payment_method_id", String(params.paymentMethodId ?? params.methodId));
@@ -108,7 +108,7 @@ export const paymentsService = {
   },
 
   async get(id: string) {
-    const { data, error } = await createClient().from("payments").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await createClient().from("payments").select(paymentColumns).eq("id", id).maybeSingle();
     throwIfError(error, "The payment could not be loaded.");
     if (!data) throw new ApiError("Payment not found.", 404);
     return (await enrichPayments([data]))[0];
@@ -141,7 +141,7 @@ export const paymentsService = {
   async methods() {
     const { data, error } = await createClient()
       .from("payment_methods")
-      .select("*")
+      .select("id,name,is_active,is_system")
       .order("is_system", { ascending: false })
       .order("name");
     throwIfError(error, "Payment methods could not be loaded.");
@@ -150,19 +150,14 @@ export const paymentsService = {
 
   async summary(): Promise<PaymentSummary> {
     const { from, to } = currentBusinessRange();
-    const supabase = createClient();
-    const [reportResult, paidResult, unpaidResult] = await Promise.all([
-      supabase.rpc("report_summary", { p_from: from, p_to: to }),
-      supabase.from("member_overview").select("id", { count: "exact", head: true }).eq("payment_status", "paid"),
-      supabase.from("member_overview").select("id", { count: "exact", head: true }).in("payment_status", ["partial", "unpaid"]),
-    ]);
-    throwIfError(reportResult.error, "Payment totals could not be loaded.");
-    const report = jsonRecord(reportResult.data as Json);
+    const { data, error } = await createClient().rpc("report_summary", { p_from: from, p_to: to });
+    throwIfError(error, "Payment totals could not be loaded.");
+    const report = jsonRecord(data as Json);
     return {
       paymentsThisMonth: numberValue(report.total_revenue as number | string | null | undefined),
       outstandingAmount: numberValue(report.outstanding_amount as number | string | null | undefined),
-      paidMembers: paidResult.count ?? 0,
-      unpaidMembers: unpaidResult.count ?? 0,
+      paidMembers: numberValue(report.paid_members as number | string | null | undefined),
+      unpaidMembers: numberValue(report.unpaid_members as number | string | null | undefined),
     };
   },
 };

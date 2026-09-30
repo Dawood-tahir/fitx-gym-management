@@ -33,17 +33,23 @@ function Chart({ title, data, color, dataKey }: { title: string; data: ReportsDa
 }
 
 export default function ReportsPage() {
-  const { locale } = useLocale(); const [preset, setPreset] = useState<Preset>("month"); const [custom, setCustom] = useState<ReportRange>(() => { const now = new Date(); return { from: localDateInput(currentBusinessPeriodStart(now)), to: todayInput() }; });
+  const { locale } = useLocale(); const [preset, setPreset] = useState<Preset>("month"); const [custom, setCustom] = useState<ReportRange>(() => { const now = new Date(); return { from: localDateInput(currentBusinessPeriodStart(now)), to: todayInput() }; }); const [exporting, setExporting] = useState(false);
   const range = useMemo(() => rangeFor(preset, custom), [preset, custom]);
   const { data, error, loading, reload } = useApiQuery(() => reportsService.get(range), [range.from, range.to]);
-  const exportCsv = () => {
-    if (!data) return;
-    const rows = [["Type", "Date", "Reference", "Description", "Amount"], ...data.payments.map((item) => ["Payment", item.date, item.member ?? "", `${item.plan ?? ""} ${item.method ?? ""}`.trim(), item.amount]), ...data.recentExpenses.map((item) => ["Expense", item.date, item.category ?? "", item.description ?? "", -item.amount]), ...data.newMemberRows.map((item) => ["New Member", item.joinDate, item.memberCode, item.name, ""])];
-    const csv = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = `fitx-report-${range.from}-to-${range.to}.csv`; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  const exportCsv = async () => {
+    if (!data || exporting) return;
+    setExporting(true);
+    try {
+      const exportData = await reportsService.export(range);
+      const rows = [["Type", "Date", "Reference", "Description", "Amount"], ...exportData.payments.map((item) => ["Payment", item.date, item.member ?? "", `${item.plan ?? ""} ${item.method ?? ""}`.trim(), item.amount]), ...exportData.expenses.map((item) => ["Expense", item.date, item.category ?? "", item.description ?? "", -item.amount]), ...exportData.newMembers.map((item) => ["New Member", item.joinDate, item.memberCode, item.name, ""])];
+      const csv = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = `fitx-report-${range.from}-to-${range.to}.csv`; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } finally {
+      setExporting(false);
+    }
   };
   return <div className="space-y-5 animate-fade-up">
-    <PageHeader title="Reports" description="Track your gym's financial and membership performance." actions={<div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={exportCsv} disabled={!data}><Download className="size-4" />CSV</Button><Button size="sm" variant="secondary" onClick={() => window.print()}><Printer className="size-4" />Print</Button></div>} />
+    <PageHeader title="Reports" description="Track your gym's financial and membership performance." actions={<div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={exportCsv} disabled={!data} loading={exporting}><Download className="size-4" />CSV</Button><Button size="sm" variant="secondary" onClick={() => window.print()}><Printer className="size-4" />Print</Button></div>} />
     <Card className="p-3 print:hidden"><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><Select value={preset} onChange={(event) => setPreset(event.target.value as Preset)} className="sm:w-44"><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month (10th–9th)</option><option value="lastMonth">Last Month (10th–9th)</option><option value="year">This Year</option><option value="custom">Custom Range</option></Select>{preset === "custom" && <><Input type="date" value={custom.from} max={custom.to} onChange={(event) => setCustom((value) => ({ ...value, from: event.target.value }))} /><Input type="date" value={custom.to} min={custom.from} max={todayInput()} onChange={(event) => setCustom((value) => ({ ...value, to: event.target.value }))} /></>}<span className="text-xs text-muted">{formatDate(range.from, locale)} — {formatDate(range.to, locale)}</span></div></Card>
     {loading && !data ? <LoadingState rows={8} /> : error && !data ? <ErrorState title="Could not load reports" message="Please try again." onRetry={reload} /> : data ? <ReportBody data={data} locale={locale} /> : <EmptyState title="No report data available" description="Choose another period or add financial records." />}
   </div>;

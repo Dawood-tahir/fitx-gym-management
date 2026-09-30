@@ -4,7 +4,10 @@ import type { ProfileRow, StaffRow } from "@/types/database";
 import { normalizeRole } from "@/lib/access";
 import { ApiError, throwIfError } from "./errors";
 import { numberValue, optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
-import { removeImage, signedImageUrl, uploadImage } from "./storage";
+import { removeImage, signedImageUrl, signedImageUrls, uploadImage } from "./storage";
+
+const staffColumns = "id,profile_id,full_name,phone,email,position,salary,hire_date,status,address,notes,photo_path,created_at";
+type StaffListRow = Pick<StaffRow, "id" | "profile_id" | "full_name" | "phone" | "email" | "position" | "salary" | "hire_date" | "status" | "address" | "notes" | "photo_path" | "created_at">;
 
 const databaseRole: Record<UserRole, ProfileRow["role"]> = {
   OWNER: "owner",
@@ -14,7 +17,7 @@ const databaseRole: Record<UserRole, ProfileRow["role"]> = {
   LADIES_RECEPTIONIST: "ladies_receptionist",
 };
 
-async function toStaff(row: StaffRow, role?: ProfileRow["role"]): Promise<Staff> {
+function toStaff(row: StaffListRow, role?: ProfileRow["role"], photoUrl?: string): Staff {
   return {
     id: row.id,
     fullName: row.full_name,
@@ -27,7 +30,7 @@ async function toStaff(row: StaffRow, role?: ProfileRow["role"]): Promise<Staff>
     address: row.address ?? undefined,
     notes: row.notes ?? undefined,
     photoPath: row.photo_path ?? undefined,
-    photoUrl: await signedImageUrl("staff-photos", row.photo_path),
+    photoUrl,
     profileId: row.profile_id ?? undefined,
     accessRole: role ? normalizeRole(role) : undefined,
     createdAt: row.created_at,
@@ -40,7 +43,7 @@ export const staffService = {
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 20)));
     const from = (page - 1) * pageSize;
     const search = safeSearchTerm(String(params.search ?? ""));
-    let query = createClient().from("staff").select("*", { count: "exact" });
+    let query = createClient().from("staff").select(staffColumns, { count: "exact" });
     if (search) {
       const pattern = `%${search}%`;
       query = query.or(`full_name.ilike.${pattern},phone.ilike.${pattern},email.ilike.${pattern},position.ilike.${pattern}`);
@@ -55,7 +58,12 @@ export const staffService = {
       : { data: [] as Array<Pick<ProfileRow, "id" | "role">>, error: null };
     throwIfError(profilesResult.error, "Staff access roles could not be loaded.");
     const roles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile.role]));
-    return pageResult(await Promise.all((data ?? []).map((row) => toStaff(row, row.profile_id ? roles.get(row.profile_id) : undefined))), page, pageSize, count);
+    const photoUrls = await signedImageUrls("staff-photos", (data ?? []).map((row) => row.photo_path));
+    return pageResult((data ?? []).map((row) => toStaff(
+      row,
+      row.profile_id ? roles.get(row.profile_id) : undefined,
+      row.photo_path ? photoUrls.get(row.photo_path) : undefined,
+    )), page, pageSize, count);
   },
 
   async create(input: StaffInput) {
@@ -77,9 +85,9 @@ export const staffService = {
         notes: optionalText(input.notes),
         photo_path: photoPath,
         created_by: userData.user.id,
-      }).select("*").single();
+      }).select(staffColumns).single();
       throwIfError(error, "The staff record could not be created.");
-      return toStaff(data);
+      return toStaff(data, undefined, await signedImageUrl("staff-photos", data.photo_path));
     } catch (error) {
       if (photoPath) await removeImage("staff-photos", photoPath).catch(() => undefined);
       throw error;
@@ -88,7 +96,7 @@ export const staffService = {
 
   async update(id: string, input: Partial<StaffInput>) {
     const supabase = createClient();
-    const { data: existing, error: existingError } = await supabase.from("staff").select("*").eq("id", id).maybeSingle();
+    const { data: existing, error: existingError } = await supabase.from("staff").select(staffColumns).eq("id", id).maybeSingle();
     throwIfError(existingError, "The staff record could not be loaded.");
     if (!existing) throw new ApiError("Staff record not found.", 404);
     let photoPath = existing.photo_path;
@@ -104,7 +112,7 @@ export const staffService = {
       ...(input.address !== undefined && { address: optionalText(input.address) }),
       ...(input.notes !== undefined && { notes: optionalText(input.notes) }),
       photo_path: photoPath,
-    }).eq("id", id).select("*").single();
+    }).eq("id", id).select(staffColumns).single();
     if (error) {
       if (photoPath && photoPath !== existing.photo_path) await removeImage("staff-photos", photoPath).catch(() => undefined);
       throwIfError(error, "The staff record could not be updated.");
@@ -116,7 +124,11 @@ export const staffService = {
       const { error: roleError } = await supabase.from("profiles").update({ role: databaseRole[input.accessRole] }).eq("id", data.profile_id);
       throwIfError(roleError, "The staff access role could not be updated.");
     }
-    return toStaff(data, input.accessRole ? databaseRole[input.accessRole] : undefined);
+    return toStaff(
+      data,
+      input.accessRole ? databaseRole[input.accessRole] : undefined,
+      await signedImageUrl("staff-photos", data.photo_path),
+    );
   },
 
   async disable(id: string) {

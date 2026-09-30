@@ -4,7 +4,7 @@ import type { AuthSession, UserRole } from "@/types/api";
 import type { ProfileRow } from "@/types/database";
 import { ApiError, throwIfError, toApiError } from "./errors";
 
-function roleFor(profile: ProfileRow): UserRole {
+function roleFor(profile: Pick<ProfileRow, "role">): UserRole {
   if (profile.role === "owner") return "OWNER";
   if (profile.role === "admin") return "ADMIN";
   if (profile.role === "manager") return "MANAGER";
@@ -14,7 +14,11 @@ function roleFor(profile: ProfileRow): UserRole {
 
 async function appSession(session: Session | null): Promise<AuthSession | null> {
   if (!session?.user) return null;
-  const { data, error } = await createClient().from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+  const { data, error } = await createClient()
+    .from("profiles")
+    .select("id,full_name,email,phone,role,is_active,last_login_at")
+    .eq("id", session.user.id)
+    .maybeSingle();
   throwIfError(error, "Your FITX profile could not be loaded.");
   if (!data) throw new ApiError("Your account has no FITX profile.", 403);
   if (!data.is_active) throw new ApiError("Your FITX account is awaiting activation.", 403);
@@ -65,7 +69,10 @@ export const authService = {
     throwIfError(error, "Your password could not be updated.");
   },
   subscribe(listener: (session: AuthSession | null) => void) {
-    const { data } = createClient().auth.onAuthStateChange((_event: AuthChangeEvent, session) => {
+    const { data } = createClient().auth.onAuthStateChange((event: AuthChangeEvent, session) => {
+      // current() owns initial restoration. Handling INITIAL_SESSION here as well
+      // repeats both the session lookup and the profiles query on every app load.
+      if (event === "INITIAL_SESSION") return;
       window.setTimeout(() => { void appSession(session).then(listener).catch(() => listener(null)); }, 0);
     });
     return () => data.subscription.unsubscribe();

@@ -49,7 +49,7 @@ export function SidebarContent({ collapsed = false, mobile = false, onNavigate }
         <button type="button" onClick={logout} className="min-h-10 rounded-lg px-2 text-[11px] font-semibold text-danger hover:bg-danger/10">{t("nav.signOut")}</button>
       </div>
     </div> : null}
-    {!mobile && !collapsed ? <div className="relative min-h-[260px] overflow-hidden border-t border-white/[.045] bg-[url('/images/fitx-sidebar.png')] bg-cover bg-[center_25%]">
+    {!mobile && !collapsed ? <div className="relative min-h-[260px] overflow-hidden border-t border-white/[.045] bg-[url('/images/fitx-sidebar.webp')] bg-cover bg-[center_25%]">
       <div className="absolute inset-0 bg-gradient-to-b from-[#071014] via-[#071014]/35 to-[#071014]/80" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#071014]/35 to-transparent" />
       <div className="absolute inset-x-5 bottom-5"><Dumbbell className="mb-3 size-5 text-primary" /><p className="text-[17px] font-extrabold uppercase leading-tight text-white">Train better.<br />Manage <span className="text-primary">smarter.</span></p><p className="mt-3 text-[9px] font-semibold tracking-[.32em] text-white/60">FITX</p></div>

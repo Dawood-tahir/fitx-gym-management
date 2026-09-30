@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Complaint, ComplaintInput, PagedResult } from "@/types/api";
-import type { ComplaintRow, MemberRow } from "@/types/database";
+import type { ComplaintRow } from "@/types/database";
 import { throwIfError } from "./errors";
 import { optionalText, pageResult, safeSearchTerm, titleCase } from "./shared";
 
-function toComplaint(row: ComplaintRow, memberName?: string): Complaint {
+const complaintColumns = "id,member_id,name,phone,type,subject,message,status,priority,admin_response,resolved_at,created_at";
+type ComplaintListRow = Pick<ComplaintRow, "id" | "member_id" | "name" | "phone" | "type" | "subject" | "message" | "status" | "priority" | "admin_response" | "resolved_at" | "created_at">;
+
+function toComplaint(row: ComplaintListRow, memberName?: string): Complaint {
   return {
     id: row.id,
     memberId: row.member_id ?? undefined,
@@ -22,12 +25,12 @@ function toComplaint(row: ComplaintRow, memberName?: string): Complaint {
   };
 }
 
-async function enrich(rows: ComplaintRow[]) {
+async function enrich(rows: ComplaintListRow[]) {
   const ids = [...new Set(rows.map((row) => row.member_id).filter((value): value is string => Boolean(value)))];
   if (!ids.length) return rows.map((row) => toComplaint(row));
-  const { data, error } = await createClient().from("members").select("*").in("id", ids);
+  const { data, error } = await createClient().from("members").select("id,full_name").in("id", ids);
   throwIfError(error, "Complaint members could not be loaded.");
-  const members = new Map((data ?? []).map((row: MemberRow) => [row.id, row.full_name]));
+  const members = new Map((data ?? []).map((row) => [row.id, row.full_name]));
   return rows.map((row) => toComplaint(row, row.member_id ? members.get(row.member_id) : undefined));
 }
 
@@ -37,7 +40,7 @@ export const complaintsService = {
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 20)));
     const from = (page - 1) * pageSize;
     const search = safeSearchTerm(String(params.search ?? ""));
-    let query = createClient().from("complaints_feedback").select("*", { count: "exact" });
+    let query = createClient().from("complaints_feedback").select(complaintColumns, { count: "exact" });
     if (search) {
       const pattern = `%${search}%`;
       query = query.or(`subject.ilike.${pattern},message.ilike.${pattern},name.ilike.${pattern},phone.ilike.${pattern}`);
@@ -64,7 +67,7 @@ export const complaintsService = {
       priority: input.priority,
       admin_response: optionalText(input.adminResponse),
       created_by: userData.user?.id ?? null,
-    }).select("*").single();
+    }).select(complaintColumns).single();
     throwIfError(error, "The complaint or feedback could not be created.");
     return (await enrich([data]))[0];
   },
@@ -80,7 +83,7 @@ export const complaintsService = {
       ...(input.status !== undefined && { status: input.status }),
       ...(input.priority !== undefined && { priority: input.priority }),
       ...(input.adminResponse !== undefined && { admin_response: optionalText(input.adminResponse) }),
-    }).eq("id", id).select("*").single();
+    }).eq("id", id).select(complaintColumns).single();
     throwIfError(error, "The complaint or feedback could not be updated.");
     return (await enrich([data]))[0];
   },
